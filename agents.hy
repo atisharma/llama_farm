@@ -1,34 +1,49 @@
-"LLM agents.
+"LLM agent classes.
 
-An agent in artificial intelligence refers to a software program that
-performs tasks on behalf of another entity.  Agents are designed to
-act autonomously and make decisions based on their programming or
-instructions from other agents.  They can be used for various purposes
-such as data collection, problem solving, decision making, and
-communication with other systems.  "
+An agent performs tasks on behalf of another entity.
+Agents are designed to act autonomously and make decisions based on their
+programming or instructions from other agents."
+
 
 (require hyrule.argmove [-> ->>])
 
 (import api [completion chat-completion edits embedding])
-(import utils [get-response get-alpaca-response-text dprint])
+(import utils [get-response get-alpaca-response-text ->text dprint])
 
-(import rich)
 
+(defn make-template-str [template]
+  "Make a template string from a template dict. A template has the format:
+    {\"thoughts\" \"THOUGHTS: my thoughts\"
+    \"reasoning\" \"REASONING: my reasoning\"
+    \"emotions\" \"EMOTIONS: how I feel\"}"
+  (.join "\n"
+         (lfor [k v] (template.items)
+               f"{(.upper k)}: {v}")))
+  
 
 (defclass BaseAgent []
   "An agent is the thing that applies an instruction to the input using the LLM server."
 
-  (defn __init__ [self * base-url params]
+  (defn __init__ [self * base-url [params {}]]
     (setv self.base-url base-url
           self.params params))
 
   (defn complete [self prompt]
       (completion self.base-url prompt #** self.params))
 
-  (defn __call__ [self #* args #** kwargs]
-    (-> (self.complete #* args #** kwargs)
+  (defn _clean-response [self response]
+    (-> response
         get-response
-        get-alpaca-response-text)))
+        get-alpaca-response-text))
+
+  (defn __call__ [self #* args [verbose False] #** kwargs]
+    (let [full-response (self.complete #* args #** kwargs)
+          response (self._clean-response full-response)]
+      (when verbose
+        (print (* "=" 80))
+        (print response)
+        (print (* "=" 80)))
+      response)))
 
 
 (defclass AlpacaV0Agent [BaseAgent]
@@ -41,7 +56,6 @@ Assume Alpaca v0 format."
                        ["Below is an instruction that describes a task. Write a response that appropriately completes the request."
                         "## Instruction:" instruction
                         "## Response:"])]
-      (dprint query self.params self.base-url)
       (completion self.base-url query #** self.params))))
 
 
@@ -56,7 +70,6 @@ Assume Alpaca v0 format."
                         "## Instruction:" instruction
                         "## Input:" input
                         "## Response:"])]
-      (dprint query self.params self.base-url)
       (completion self.base-url query #** self.params))))
 
 
@@ -73,29 +86,28 @@ Assume Alpaca v0 format."
 
 
 (defclass Personality [BaseAgent]
-  "A personality is an agent with a set of parameters and a character."
+  "A personality is an agent with a set of parameters and a character.
+It thinks in terms of form-filling of templates."
 
-  (defn __init__ [self * base-url character params]
+  (setv template {"thoughts" "my thoughts."
+                  "reasoning" "my reasoning."
+                  "emotions" "how I feel."
+                  "task_list" "a short list of actionable tasks that conveys a long-term plan."
+                  "criticism" "constructive self-criticism."
+                  "next_task" "the next actionable item."})
+        
+  (defn __init__ [self * base-url character params [template None]]
+    (when template (setv self.template template))
     (setv self.base-url base-url
           self.params params
           self.character character
-          self.prompt "Complete the template with your own thoughts to align with the objective, context and task. Each section has its own line." 
-          self.response-template (.join "\n"
-                                        ["THOUGHTS: my thoughts."
-                                         "REASONING: my reasoning."
-                                         "EMOTIONS: how I feel."
-                                         "AIMS:\n- a short bulleted\n- list of actionable tasks that conveys\n- a long-term plan."
-                                         "CRITICISM: constructive self-criticism."
-                                         "ACTION: the next actionable item."])))
+          self.prompt "Next, complete the template with your own thoughts to align with the objective. Each section has its own line.")) 
 
-  (defn complete [self * objective context aims task]
-    (let [instruction f"{context}
-Your character: {self.character}
-Your objective: {objective}
-Current aims: {aims}
-current task: {task}
-{self.prompt}"]
+  (defn complete [self #** kwargs]
+    (let [instruction (->text kwargs)]
       (edits self.base-url
-             instruction
-             self.response-template
+             (.join "\n" [self.character
+                          instruction
+                          self.prompt])
+             (make-template-str self.template)
              #** self.params))))

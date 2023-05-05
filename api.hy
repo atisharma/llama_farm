@@ -1,3 +1,9 @@
+"OpenAI/OpenedAI compatible API client library.
+
+This module provides general API put/post/get/delete functions and also OpenAI compatible endpoints.
+
+"
+
 (require hyrule.argmove [-> ->>])
 
 (import requests)
@@ -53,7 +59,8 @@
       (format-response)))
 
 
-;;; TODO: sort out base-url more nicely, perhaps using partial?
+; TODO: sort out base-url more nicely, perhaps using partial?
+; TODO: check compatibility with openai
 
 (defn models [base-url]
   (get-endpoint base-url "/models"))
