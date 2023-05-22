@@ -4,11 +4,31 @@
 (import json)
 (import re)
 (import pathlib [Path])
-
 (import readline)
+(import hashlib [md5])
+
+; tomllib for python 3.11 onwards
+(try
+  (import tomllib)
+  (except [ModuleNotFoundError]
+    (import tomli :as tomllib)))
+
 
 (setv re-parser (re.compile r"([^\n][ \w]*): "))
+(setv config-file "config.toml")
 
+(defclass ResponseError [Exception])
+
+
+(defn config [#* keys]
+  ; get values in a toml file like a hashmap, but default to None.
+  (try
+    (-> config-file
+      (slurp)
+      (tomllib.loads)
+      (get #* keys))
+    (except [KeyError]
+      None)))
 
 (defn rlinput [prompt [prefill ""]]
   (readline.set_startup_hook (fn [] (readline.insert_text prefill)))
@@ -37,16 +57,26 @@
     (when (path.exists)
       (path.read-text))))
 
+(defn hash-id [s]
+  "Hex digest of md5 hash of string."
+  (-> (s.encode "utf-8")
+      (md5)
+      (.hexdigest)))
+
 (defn dprint [#* args]
   "Pretty print a bunch of args."
   (import rich)
   (for [x args]
-    (rich.print (* "=" 80))
+    (rich.print (* "═" 80))
     (rich.print x))
-  (rich.print (* "=" 80)))
+  (rich.print (* "┈" 80)))
 
 (defn get-response [response]
-  (get response "choices" 0 "text"))
+  (try
+    (get response "choices" 0 "text")
+    (except [KeyError]
+      (let [response-str (json.dumps response :indent 4)]
+        (raise (ResponseError f"Bad response format from server,\n{response-str}"))))))
 
 (defn get-alpaca-response-text [response]
   "Get the response text of an Alpaca type response."

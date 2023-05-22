@@ -1,3 +1,17 @@
 hy
 hyrule
 requests
+tomli
+langchain
+chromadb
+sentence-transformers
+pypdf
+tabulate
+pdf2image
+pytesseract
+pymupdf
+libmagic
+wikipedia
+duckduckgo-search
+arxiv
+markdownify
