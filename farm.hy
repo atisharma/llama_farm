@@ -51,15 +51,11 @@ each agent could act independently and only halt and report when stuck.
 (import functools [partial])
 
 (import agents [Personality Summarizer])
-(import utils [dprint load save ->conclusion ->dict ->text rlinput])
+(import utils [dprint load save ->conclusion ->dict ->text rlinput config])
 
 
-(setv base-url "http://jupiter.letterbox.pw:5001/v1"
-      params {"temperature" 0.8
-              "repetition_penalty" 1.1
-              "max_tokens" 1800
-              "model" "default"}
-      permitted-keys #{"objective" "completed" "task_list" "next_task" "constraints" "reasoning" "idea" "weaknesses" "strengths" "keywords" "context"})
+(setv base-url (config "local" "base-url"))
+
 
 ;; functions on plans: plan, ... -> plan
 (defn apply [agent plan [verbose False]]
@@ -67,26 +63,27 @@ each agent could act independently and only halt and report when stuck.
   (let [output-text (agent :verbose verbose #** plan)
         output-dict (->dict output-text)]
     (dprint output-dict)
-    (dfor [k v] (.items (| plan output-dict))
-          :if (in k permitted-keys)
-          k v)))
+    (if (= "n" (.lower (rlinput "Y/n> ")))
+      plan
+      (dfor [k v] (.items (| plan output-dict))
+            :if (in k permitted-keys)
+            k v))))
 
 
 ;; the raw agents: plan -> text
 
 (setv manage (partial apply (Personality :base-url base-url
                                          :character "I decide on the best actionable task to do next to achieve the aims. I review and revise the aims, updating them to reflect the current plan. I remove completed tasks from the aims and add new ones as necessary."
-                                         :template {"thoughts" "my thinking on how to break down the objective into aims"
-                                                    "completed" "a record of tasks that have already been completed."
-                                                    "task_list" "a list of actionable tasks I think of that conveys the plan to meet the long-term objective."
-                                                    "next_task" "the next actionable item I have decided to complete."} 
+                                         :template {"completed" "a record of tasks that have already been completed."
+                                                    "task list" "a list of actionable tasks I think of that conveys the plan to meet the long-term objective."
+                                                    "current task" "the most urgent actionable item to complete."} 
                                          :params params)))
 
 (setv innovate (partial apply (Personality :base-url base-url
                                            :character "I give one imaginative, bright new idea for reaching the objective."
                                            :template {"opportunities" "my thoughts on opportunities for improving the plan."
                                                       "reasoning" "my reasoning."
-                                                      "emotions" "how I feel about the plan."
+                                                      ;"emotions" "how I feel about the plan."
                                                       "idea" "the new idea that might help"}
                                            :params (| params {"temperature" 1.3
                                                               "repetition_penalty" 1.3}))))
@@ -103,6 +100,12 @@ each agent could act independently and only halt and report when stuck.
                                            :template {"keywords" "a useful search phrase or keywords."}
                                            :params (| params {"max_tokens" 2000}))))
 
+(setv resource (partial apply (Personality :base-url base-url
+                                           :character "I choose the most appropriate tool needed to help complete the current task from the list of available tools."
+                                           :template {"args" "the arguments for the most appropriate tool to use."
+                                                      "tool" "the most appropriate tool to use."}
+                                           :params params)))
+
 (setv summarize (partial apply (Summarizer :base-url base-url
                                            :params (| params {"max_tokens" 2000
                                                               "temperature" 0.2
@@ -114,7 +117,7 @@ each agent could act independently and only halt and report when stuck.
   "Iterate the context, aims and task.
 The objective and constraints are invariant.
 Context should be updated externally.
-Iterates to a (conceptual) fixed point or limit cycle."
+Iterates to a (conceptual) fixed point, limit cycle or other attractor."
 
   (print)
   (dprint "Existing plan" (->text plan))

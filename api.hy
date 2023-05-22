@@ -1,17 +1,20 @@
 "OpenAI/OpenedAI compatible API client library.
 
 This module provides general API put/post/get/delete functions and also OpenAI compatible endpoints.
-
 "
+
+;;; TODO: adapt to talk to OpenAI
+
 
 (require hyrule.argmove [-> ->>])
 
 (import requests)
 (import requests.exceptions [HTTPError JSONDecodeError ConnectionError])
 
+(import utils [slurp])
 
-; just a local default
-(setv base-url "http://jupiter.letterbox.pw:5001/v1")
+
+(setv key (config "openai" "secret"))
 
 
 (defn request [url method [json None]]

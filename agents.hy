@@ -1,8 +1,10 @@
-"LLM agent classes.
+"
+LLM agent classes. (farm approach)
 
 An agent performs tasks on behalf of another entity.
 Agents are designed to act autonomously and make decisions based on their
-programming or instructions from other agents."
+programming or instructions from other agents.
+"
 
 
 (require hyrule.argmove [-> ->>])
@@ -92,9 +94,9 @@ It thinks in terms of form-filling of templates."
   (setv template {"thoughts" "my thoughts."
                   "reasoning" "my reasoning."
                   "emotions" "how I feel."
-                  "task_list" "a short list of actionable tasks that conveys a long-term plan."
+                  "task list" "a short list of actionable tasks that conveys a long-term plan."
                   "criticism" "constructive self-criticism."
-                  "next_task" "the next actionable item."})
+                  "current task" "the current actionable item."})
         
   (defn __init__ [self * base-url character params [template None]]
     (when template (setv self.template template))
