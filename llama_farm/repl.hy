@@ -1,3 +1,6 @@
+"
+The main REPL where we chat to the bot and issue commands.
+"
 
 (require hyrule.argmove [-> ->> as->])
 (require hyrule.control [unless])
@@ -5,9 +8,14 @@
 (import itertools [chain repeat])
 
 (import .utils [config rlinput user])
-(import .parser [parse])
+(import .parser [parse set-bot])
 
-(import .interface [banner format-msg get-margin info print-message clear toggle-markdown console])
+(import .interface [banner
+                    clear
+                    console
+                    format-msg
+                    get-margin
+                    info])
 
 
 (defn run []
@@ -16,6 +24,7 @@ it, and passes it to the appropriate action."
   (banner)
   (info "Type **/help** for help\n")
   (console.rule)
+  (set-bot)
   (let [chat-history []]
     (try
       (while True
@@ -24,17 +33,10 @@ it, and passes it to the appropriate action."
               user-prompt (format-msg (user "" username) margin)
               line (.strip (rlinput user-prompt))]
           (cond (or (.startswith line "/q") (.startswith line "/exit")) (break)
-                (.startswith line "/clear") (clear)
-                (.startswith line "/width") (set-width line)
-                (.startswith line "/markdown") (toggle-markdown)
                 :else (when line
                         (let [user-msg (user line username)]
-                          (unless (.startswith line "/")
-                            (.append chat-history user-msg))
-                          (let [reply (parse user-msg chat-history)]
-                            (when reply
-                              (print-message reply margin)
-                              (.append chat-history reply))))))))
+                          (setv chat-history
+                                (parse user-msg chat-history)))))))
                             
       (except [EOFError]
         (print)))))

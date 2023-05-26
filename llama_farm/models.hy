@@ -1,11 +1,13 @@
 "
-Set up chat models.
+Set up and operate the chat models from the definitions in `config.yaml`.
+
+Can talk to OpenAI or Oobabooga/text-generation-webui's openai-compatible API.
 "
 
 (require hyrule.argmove [-> ->>])
 (import functools [partial])
 
-(import langchain.llms [LlamaCpp FakeListLLM])  ; TODO: convert to chat models
+(import langchain.llms [LlamaCpp FakeListLLM])  ; TODO: convert these to chat models
 (import langchain.chat-models [ChatOpenAI])
 (import langchain.chat-models.openai [_convert-message-to-dict :as msg->dict
                                       _convert-dict-to-message :as dict->msg])
@@ -13,15 +15,15 @@ Set up chat models.
 (import .utils [config system])
 
 
-(defn personalities []
-  "Just a list of personalities defined in the config."
-  (-> (config "personalities")
+(defn bots []
+  "Just a list of bots defined in the config."
+  (-> (config "bots")
       (.keys)
       (list)))
 
-(defn params [personality]
-  "Return a dict with parameters dict as values and personality name as keys."
-  (get (config "personalities") (.lower personality)))
+(defn params [bot]
+  "Return a dict with parameters dict as values and bot name as keys."
+  (get (config "bots") (.lower bot)))
 
 (defn make-model [#** kwargs]
   "Return correct chat model instance for the kind.
@@ -38,24 +40,27 @@ Set up chat models.
          "unknown" (FakeListLLM :responses (* ["I'm not talking to you until you specify a kind of language model in the config."] 100))
          _ (FakeListLLM :responses (* ["You need to specify a valid language model 'kind = ...' in the config."] 100))))
 
-(defn _replace-role [personality chat-history]
+(defn model [bot]
+  "Return the current active model."
+  (make-model #** (params bot)))
+
+(defn _replace-role [bot chat-history]
   "Replace role a with b in all messages for openedai.
    OpenAI expects 'assistant' role, but OpenedAI bots expect 'bot'."
-  (match (:kind (params personality) None)
+  (match (:kind (params bot) None)
          "openedai" (lfor m chat-history {#** m "role" (.replace (:role m) "assistant" "bot")})
+         "openai" (lfor m chat-history {#** m "role" (.replace (:role m) "bot" "assistant")})
          _ chat-history))
 
-(defn reply [personality chat-history system-prompt]
+(defn reply [bot chat-history system-prompt]
   "Return the reply message from the chat model."
   ; we go via langchain's ridiculous Message object.
   ; Construct API instance on the fly because it sets variables at the class level.
-  (let [model (make-model #** (params personality))]
-    (->> chat-history
-         (_replace-role personality)
-         (+ [(system system-prompt)])
-         (map dict->msg)
-         (list)
-         (model)
-         (msg->dict)
-         (| {"personality" personality}))))
-
+  (->> chat-history
+   (_replace-role bot)
+   (+ [(system system-prompt)])   ;; adding the system prompt at the start may be a bit weak
+   (map dict->msg)
+   (list)
+   ((model bot))
+   (msg->dict)
+   (| {"bot" bot})))

@@ -77,10 +77,10 @@
   (let [result (urlparse url)]
     (all [result.scheme result.netloc])))
 
-(defn msg [role content personality]
+(defn msg [role content bot]
   "To conform with langchain's ridiculous BaseMessage schema."
   {"role" role
-   "personality" personality
+   "bot" bot
    "content" content})
 
 (defn system [content]
@@ -88,6 +88,9 @@
 
 (defn user [content username]
   (msg "user" content username))
+
+
+;; possibly defunct - consider removing the following
 
 (defn dprint [#* args]
   "Pretty print a bunch of args."

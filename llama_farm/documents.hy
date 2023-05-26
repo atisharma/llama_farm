@@ -14,7 +14,6 @@ Functions that produce lists of Document objects.
 
 (import requests)
 (import markdownify [markdownify])
-(import rich [print])
 
 ; consider moving into the parallel loop after the fork
 ; but transformers is imported by langchain
@@ -28,8 +27,7 @@ Functions that produce lists of Document objects.
 (import langchain.utilities [WikipediaAPIWrapper])
 
 (import .utils [config])
-
-;;; TODO: logging instead of prints
+(import .interface [info error console])
 
 
 (setv ignored-extensions ["log" "dat" "aux" "icon" "tikz"
@@ -96,27 +94,27 @@ Functions that produce lists of Document objects.
                   (in "/.venv/" fname)
                   (in "/__pycache__/" fname))
               (do
-                (when verbose (print f"[red]Ignored: {mime} {fname}[/red]"))
+                (when verbose (error f"Ignored: {mime} {fname}"))
                 [False])
               (do
                 (when verbose
                   (let [disp-str f"{mime} \"{fname}\""]
-                    (print disp-str)))
+                    (info disp-str)))
                 (try
                   (match mime
                       "application/pdf" (load-pdf fname)
                       "text/plain" (load-text fname)
                       otherwise (load-unstructured fname))
                   (except [UnicodeDecodeError]
-                    (print f"[red]Failed to decode {fname} using utf-8: ignored.[/red]")
+                    (error f"Failed to decode {fname} using utf-8: ignored.")
                     [False])
                   (except [e [TypeError]]
-                    (print f"[red]Failed to embed or decode {fname}: ignored.[/red]")
-                    (print (repr e))
+                    (error f"Failed to embed or decode {fname}: ignored.")
+                    (error (repr e))
                     [False])
                   (except [e [Exception]]
-                    (print f"[red]Failed with unknown error {fname}: ignored.[/red]")
-                    (print (repr e))
+                    (error f"Failed with unknown error {fname}: ignored.")
+                    (error (repr e))
                     [False])))))))
 
 (defn __load-file-convenience [root verbose fname]
@@ -124,8 +122,8 @@ Functions that produce lists of Document objects.
     (load-file (os.path.join root fname) :verbose verbose)
     (except [e [Exception]]
       (when verbose
-        (print f"[red]Error: {fname}[/red]")
-        (print (repr e)))
+        (error f"Error: {fname}")
+        (error (repr e)))
       [False])))
 
 (defn __parallel-load-files [root files [verbose True]]
@@ -155,7 +153,7 @@ Functions that produce lists of Document objects.
 
 (defn load [fname [verbose True]]
   "Just give me an iterable of document chunks!"
-  (when verbose (print "[blue]Loading documents.[/blue]"))
+  (when verbose (info "Loading documents."))
   (cond (os.path.isdir fname) (load-dir fname :verbose verbose)
         (os.path.isfile fname) (load-file fname :verbose verbose)
         :else (raise (FileNotFoundError fname))))
@@ -197,12 +195,12 @@ Functions that produce lists of Document objects.
 (defn present [docs]
   "Pretty-print a bunch of docs (e.g. from a query result)"
   (for [d docs]
-    (print (* "─" 80))
+    (console.rule)
     (for [[a b] (.items d.metadata)]
-      (print f"[bold][magenta]{a}:[/magenta]\t[bright cyan]\"{b}\"[default]"))
-    (print (* "─" 80))
-    (print d.page-content)
-    (print)))
+      (info f"[bold][magenta]{a}:[/magenta]\t[bright cyan]\"{b}\"[default]"))
+    (console.rule)
+    (info d.page-content)
+    (console.rule)))
 
 (defn sources [docs]
   "The list of unique sources of documents."

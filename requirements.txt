@@ -17,3 +17,4 @@ arxiv
 markdownify
 rich
 python-magic
+unstructured

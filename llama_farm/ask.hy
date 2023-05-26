@@ -10,7 +10,6 @@ Functions that return text from queries.
 (import langchain.tools [DuckDuckGoSearchRun])
 (import langchain.retrievers [WikipediaRetriever ArxivRetriever])
 
-;; TODO: switch to chat models only.
 
 ;;; -----------------------------------------------------------------------------
 ;;; LLM query functions : db | retriever, llm, query -> text
@@ -52,27 +51,40 @@ Functions that return text from queries.
 ;;; Chat completion models: ..., chat-model, query -> {query result}
 ;;; -----------------------------------------------------------------------------
 
-(defn chat [chat-llm chat-history]
-  "Simple chat over a chat history.")
-
-(defn chat-db [db chat-llm query chat-history
-               [chain-type "stuff"]
-               [sources False]
-               #** retriever-args]
-  "Function that converses over a query."
-  (let [queries (lfor m chat-history :if (= (:type m) "human") m)
-        answers (lfor m chat-history :if (= (:type m) "chat") m)
-        qa-chat-history (dict (zip (repeat "query") queries
-                                   (repeat "answer") answers))]
+(defn chat-retriever [chat-llm query chat-history
+                      [retriever retriever] 
+                      [chain-type "stuff"]
+                      [sources False]]
+  "Function that converses over a retriever query and chat history."
+  (let [queries (lfor m chat-history :if (= (:role m) "user") (:content m))
+        answers (lfor m chat-history :if (in (:role m) ["assistant" "bot"]) (:content m))
+        ;; assumes alternating user and bot messages
+        qa-chat-history (list (zip queries answers))]
     ((ConversationalRetrievalChain.from-llm :llm chat-llm
                                             :return-source-documents sources
                                             :chain-type chain-type
-                                            :chat-history qa-chat-history
-                                            :retriever (db.as-retriever #** retriever-args))
-     query)))
+                                            :retriever retriever)
+     {"question" query
+      "chat_history" qa-chat-history})))
 
-(defn chat-tool [])
+(defn chat-db [db
+               #* args
+               [chain-type "stuff"]
+               [sources False]
+               #** kwargs]
+  "Function that converses over a vectorstore query and chat history."
+  (chat-retriever #* args
+                  :retriever (db.as-retriever #** kwargs)
+                  :chain-type chain-type
+                  :sources sources))
 
+(defn chat-wikipedia [#* args
+                      [chain-type "stuff"]
+                      #** kwargs]
+  "Function that converses over a wikipedia query and chat history."
+  (chat-retriever #* args
+                  :retriever (WikipediaRetriever)
+                  :chain-type chain-type))
 
 ;;; -----------------------------------------------------------------------------
 ;;; Other query functions : query | ? -> text

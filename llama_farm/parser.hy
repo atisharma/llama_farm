@@ -1,17 +1,37 @@
+"
+Parse user input and dispatch the resulting operation,
+either internally or to a chatbot / langchain.
+"
+
 (require hyrule.argmove [-> ->> as->])
 (require hyrule.control [unless])
 
 (import os)
 
 (import llama-farm [ask store])
-(import llama-farm.models [personalities params reply])
+(import .models [bots model params reply])
 (import .utils [config is-url msg system])
-(import .interface [print-chat-history format-sources info])
+(import .interface [banner
+                    bot-color
+                    clear
+                    console
+                    error
+                    get-margin
+                    info
+                    info
+                    print-chat-history
+                    print-message
+                    print-sources
+                    set-width
+                    spinner-context
+                    tabulate
+                    toggle-markdown])
+
 
 (import requests.exceptions [ConnectionError])
 
 
-(setv personality (get (personalities) 0))
+(setv bot (get (bots) 0))
 
 (setv knowledge-store (store.faiss (os.path.join (config "storage" "path")
                                                  "knowledge.faiss")))
@@ -19,95 +39,166 @@
 (setv chat-store (store.faiss (os.path.join (config "storage" "path")
                                             "chat.faiss")))
 
+;; TODO: tabulate this automatically from a command list
 (setv help-str "
 To chat, just enter some text.
 
-Lines beginning with **/** are parsed as commands.
+Lines beginning with **/** are parsed as commands.  
 The usual readline shortcuts should be available.
 
-#### Commands:
+#### Commands
 
 - **/help /h**                   Show this helpful text
 - **/quit /q /exit**             Quit
 - **/version**                   Show the version of this client
 - **/clear**                     Clear the display
+- **/markdown**                  Toggle markdown rendering of messages
 
-#### Personalities:
+#### Bots
 
-- **/personalities**             List the available personalities
-- **/personality 'name'**        Talk to a particular personality (alice, bob, etc.) and set as current
-- **/personality**               Show the current personality to whom unaddressed input goes
+- **/bots /personalities**       List the available bots
+- **/bot /personality /p**       Show the current bot to whom input goes
+- **/bot 'name'**                Start talking to a particular bot
 
-#### Conversation:
+#### Conversation
 
-- **/undo**                      Delete the last pair of items in the conversation
+- **/undo**                      Delete the last two items in the conversation
 - **/retry**                     Get a new response to the last input
 - **/history**                   Print the whole chat history for this session
-- **/ask 'query'**               Ask a question with reference to the knowledge store
-- **/sources 'query'**           Ask a question with reference to the knowledge store, showing sources
+- **/reset!**                    Discard the whole chat history from this session
+
+- **/ask 'query'**               Ask a question over the knowledge store
+- **/sources 'query'**           Ask a question over the knowledge store, showing sources
 - **/wikipedia 'query'**         Ask a question with reference to wikipedia
 - **/arxiv 'arxiv-id' 'query'**  Ask a question about a specific arXiv article
 
-#### Memory:
+#### Memory
 
-- **/remember**                  Save the conversation to an personality's long-term memory
-- **/ingest 'filename'**         Ingest a filename or directory (recursively) to the knowledge store
-- **/ingest 'urls(s)'**          Ingest a single url or list of urls (separated by spaces, no quotes)
+- **/remember**                  Save the conversation to an bot's long-term memory
+- **/ingest 'filename(s)'**      Ingest a filename, list of filenames (separated by spaces, no quotes), or directory (recursively) to the knowledge store  
+- **/ingest 'urls(s)'**          Ingest a webpage at a single url or list of urls (separated by spaces, no quotes)
 ")
 
+;;; -----------------------------------------------------------------------------
+;;; functions for internal use
+;;; -----------------------------------------------------------------------------
 
-(defn ingest [df files-or-url]
+(defn _ingest [df files-or-url]
   "A convenience wrapper."
-  (try
-    (for [f (.split files-or-url)]
-      (if (is-url args)
-        (ingest-urls knowledge-store f)
-        (ingest-files knowledge-store f)))
-    "Done."
-    (except [e [ConnectionError]]
-      f"*I can't find that URL.*
+  (info
+    (try
+      (for [f (.split files-or-url)]
+        (if (is-url f)
+          (store.ingest-urls knowledge-store f)
+          (store.ingest-files knowledge-store f)))
+      (info "Done.")
+      (except [e [ConnectionError]]
+        (error f"I can't find that URL.
+`{(repr e)}`"))
+      (except [e [FileNotFoundError]]
+        (error f"I can't find that file or directory.
+`{(repr e)}`")))))
 
-`{(repr e)}`")
-    (except [e [FileNotFoundError]]
-      f"*I can't find that file or directory.*
+(defn _list-bots []
+  "Tabulate the available bots."
+  (info "The following bots are available.")
+  (tabulate
+    :rows (lfor p (bots)
+                (let [name f"{(.capitalize p)}" 
+                      kind (:kind (params p) "fake")
+                      model (:model_name (params p) "")
+                      temp (:temperature (params p) "")
+                      system-prompt (:system-prompt (params p) "")]
+                  [name kind model (str temp) system-prompt]))
+    :headers ["bot" "kind" "model" "temp" "system prompt"]
+    :styles (list (map bot-color (bots)))))
 
-`{(repr e)}`")))
-
-(defn list-personalities []
-  "Tabulate the available personalities."
-  (let [personality-list (.join ", " (personalities))
-        personality-table (.join "\n" (lfor p (personalities)
-                                            (let [kind (:kind (params p) "fake")]
-                                              f"\t{p :<12}{kind}")))]
-    f"*{personality-list} are available.\nThey are of the following types:*\n\n{personality-table}"))
+(defn set-bot [[new-bot ""]]
+  (global bot)
+  (let [p (.lower new-bot)]
+    (info
+      (cond (in p (bots)) (do (setv bot p)
+                              f"*You are now talking to {(.title bot)}.*")
+            (not p) f"*You are talking to {(.title bot)}.*"
+            :else f"*{p} is not available. You are still talking to {(.title bot)}.*")))) 
   
+(defn enquire-db [bot user-message args chat-history * chain-type]
+  (with [c (spinner-context f"{(.capitalize bot)} is thinking...")]
+    (let [margin (get-margin chat-history)
+          reply (ask.chat-db knowledge-store
+                             (model bot)
+                             args
+                             chat-history
+                             :chain-type chain-type
+                             :sources True)]
+      (print-sources (:source-documents reply))
+      (let [reply-msg (msg "assistant" f"{(:answer reply)}" bot)]
+        (print-message reply-msg margin)
+        [{#** user-message "content" args} reply-msg]))))
 
-(defn parse [human-message chat-history]
-  "Take as input human-message: {role: user, content: line}, the chat history: [list messages], and personality: (system prompt string).
-   Do the action resulting from `line`, and return reply as a message, or None if appropriate."
-  (global personality)
+(defn enquire-wikipedia [bot user-message args chat-history * chain-type]
+  (with [c (spinner-context f"{(.capitalize bot)} is thinking...")]
+    (let [margin (get-margin chat-history)
+          reply (ask.chat-wikipedia (model bot)
+                                    args
+                                    chat-history
+                                    :chain-type chain-type
+                                    :sources True)]
+      (let [reply-msg (msg "assistant" f"{(:answer reply)}" bot)]
+        (print-message reply-msg margin)
+        [{#** user-message "content" args} reply-msg]))))
+
+;;; -----------------------------------------------------------------------------
+;;; The parser: message, list[message] -> message | None
+;;; -----------------------------------------------------------------------------
+
+(defn parse [user-message chat-history]
+  "Take as input user-message: {role: user, content: line}, the chat history: [list messages], and bot: (system prompt string).
+   Do the action resulting from `line`, and return the updated chat history."
+  (global bot)
   (let [chain-type (or (config "repl" "chain-type") "stuff")
-        system-prompt (:system_prompt (params personality))
-        line (:content human-message)]
-    (setv [command _ args] (.partition line " "))
-    (if (.startswith line "/")
-        (match (.lower command)
-               "/help" (info help-str)
-               "/h" (info help-str)
-               "/version" (info (version "llama_farm"))
-               ;;
-               "/personalities" (info (list-personalities))
-               "/personality" (info (cond (in (.lower args) (personalities)) (do (setv personality (.lower args))
-                                                                                 f"*You are now talking to {(.title personality)}.*")
-                                          (not args) f"*You are talking to {(.title personality)}.*"
-                                          :else f"*{args} is not available. You are still talking to {(.title personality)}.*"))
-               ;;
-               "/ingest" (info (ingest args))
-               ;;
-               "/wikipedia" (msg "assistant" f"{(:answer (ask.wikipedia model args) "*No answer*")}")
-               "/ask" (msg "assistant" f"{(:result (ask.db knowledge-store model args))}")
-               "/sources" (msg "assistant" f"{(format-sources (ask.db knowledge-store model args :sources True))}")
-               ;;
-               "/history" (print-chat-history chat-history)
-               _ (info f"*Unknown command **{command}**."))
-        (reply personality chat-history system-prompt))))
+        system-prompt (:system_prompt (params bot))
+        line (:content user-message)
+        margin (get-margin chat-history)
+        [_command _ args] (.partition line " ")
+        command (.lower _command)]
+    (unless (.startswith line "/")
+      (.append chat-history user-message))
+    (cond
+      ;; commands that give a reply
+      ;;
+      ;; move this to a function, and call with different chain-types, k, search type.
+      (= command "/ask") (.extend chat-history (enquire-db bot user-message args chat-history
+                                                           :chain-type chain-type))
+      (= command "/wikipedia") (.extend chat-history (enquire-wikipedia bot user-message args chat-history
+                                                                        :chain-type chain-type))
+      ;;
+      ;; interface commands
+      (= command "/clear") (clear)
+      (= command "/banner") (do (clear) (banner) (console.rule))
+      (= command "/width") (set-width line)
+      (= command "/markdown") (toggle-markdown)
+      (= command "/reset!") (do (info "Conversation discarded.")
+                                (setv chat-history []))
+      (= command "/help") (info help-str)
+      (= command "/h") (info help-str)
+      (= command "/version") (info (version "llama_farm"))
+      ;;
+      ;; bot / chat commands
+      (= command "/bot") (set-bot args)
+      (= command "/bots") (_list-bots)
+      (= command "/personalities") (_list-bots)
+      (= command "/history") (print-chat-history chat-history)
+      ;;
+      ;; vectorstore commands
+      (= command "/ingest") (_ingest knowledge-store args)
+      ;;
+      (.startswith line "/") (error f"Unknown command **{command}**.")
+      ;;
+      ;; otherwise, normal chat
+      :else (do (with [c (spinner-context f"{(.capitalize bot)} is thinking...")]
+                  (let [reply-msg (reply bot chat-history system-prompt)]
+                    (.append chat-history reply-msg)
+                    (print-message reply-msg margin)))))
+    ;;
+    chat-history))

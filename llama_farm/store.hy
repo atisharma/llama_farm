@@ -37,11 +37,9 @@ optional k value to specify the number of results.
 (import langchain.schema [Document])
 (import langchain.docstore.in_memory [InMemoryDocstore])
 
-;; do some nicer logging here
-(import rich [print])
-
 (import .utils [config hash-id])
 (import .documents [load url])
+(import .interface [console info error])
 
 
 (setv embedding (HuggingFaceEmbeddings :model-name (config "storage" "embedding")))
@@ -96,22 +94,23 @@ optional k value to specify the number of results.
     ; but let's not over-engineer this yet
     (match db.kind
            "chroma" (do
-                      (print "[blue]Deleting documents to be replaced.[/blue]")
+                      (info "Deleting documents to be replaced.")
                       (db._collection.delete uids)
                       (db.index.remove-ids)
-                      (print "[blue]Adding documents.[/blue]")
+                      (info f"Adding {(len uids)} documents.")
                       (db.add_documents udocs :ids uids)
-                      (print f"[blue]Saving vector store to {db.path}/.[/blue]")
+                      (info f"Saving vector store to {db.path}/.")
                       (db.persist))
            "faiss" (do
                      ; only insert docs that aren't already in the db
-                     (let [new-ids (list (.difference (set uids)
-                                                      (set (.values db.index-to-docstore-id))))
+                     (let [existing-ids (set (.values db.index-to-docstore-id))
+                           new-ids (list (.difference (set uids) existing-ids))
                            new-docs (lfor i new-ids (get docs-map i))]
-                       (print "[blue]Adding new documents.[/blue]")
-                       (db.add_documents new-docs :ids new-ids)
-                       (print f"[blue]Saving vector store to {db.path}/.[/blue]")
-                       (db.save-local db.path))))))
+                       (info f"Adding {(len new-ids)} new documents, ignoring {(- (len uids) (len new-ids))} duplicates.")
+                       (when (len new-ids)
+                         (db.add_documents new-docs :ids new-ids)
+                         (info f"Saving vector store to {db.path}/.")
+                         (db.save-local db.path)))))))
 
 (defn ingest-files [db fname [verbose True]]
   "Load files or directories and ingest them."
