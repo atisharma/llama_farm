@@ -3,9 +3,9 @@ hyrule
 requests
 tomli
 langchain
-chromadb
+openai
+faiss-cpu
 sentence-transformers
-pypdf
 tabulate
 pdf2image
 pytesseract
@@ -15,3 +15,5 @@ wikipedia
 duckduckgo-search
 arxiv
 markdownify
+rich
+python-magic
