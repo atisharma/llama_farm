@@ -7,13 +7,11 @@ Functions that produce lists of Document objects.
 
 (import os)
 (import magic)
+(import logging)
 
 (import functools [partial])
 (import itertools [chain repeat])
 (import multiprocessing [Pool cpu-count])
-
-(import requests)
-(import markdownify [markdownify])
 
 ; consider moving into the parallel loop after the fork
 ; but transformers is imported by langchain
@@ -25,9 +23,11 @@ Functions that produce lists of Document objects.
 (import langchain.text-splitter [RecursiveCharacterTextSplitter
                                  MarkdownTextSplitter])
 (import langchain.utilities [WikipediaAPIWrapper])
+(import langchain.schema [Document])
 
 (import .utils [config])
-(import .interface [info error console])
+(import .interface [track spinner-context])
+(import .texts [youtube->text url->text])
 
 
 (setv ignored-extensions ["log" "dat" "aux" "icon" "tikz"
@@ -55,7 +55,7 @@ Functions that produce lists of Document objects.
 ;;; functions to load documents from files : fname, ? -> Documents
 ;;; -----------------------------------------------------------------------------
 
-(defn load-unstructured [fname [verbose True]]
+(defn load-unstructured [fname]
   "Create list of document objects from a file of any type, using Unstructured."
   (let [loader (UnstructuredFileLoader fname)]
     (try
@@ -63,14 +63,14 @@ Functions that produce lists of Document objects.
       (except [ValueError]
         [False]))))
 
-(defn load-text [fname [verbose True]]
+(defn load-text [fname] 
   "Create list of document objects from a text file, using the tokenizer."
   ; FIXME: manage plain text not decoding with utf-8
   (-> fname
     (TextLoader)
     (.load-and-split :text-splitter splitter)))
 
-(defn load-pdf [fname [verbose True]]
+(defn load-pdf [fname] 
   "Create list of document objects from a pdf file."
   (-> fname
     (PyMuPDFLoader)
@@ -80,7 +80,7 @@ Functions that produce lists of Document objects.
   "Create list of documents from audio, via whisper transcription."
   [False])
 
-(defn load-file [fname [verbose True]]
+(defn load-file [fname]
   "Intelligently (ha!) load a file as a iterable of Document objects."
   (filter None
         (let [mime (magic.from-file fname :mime True)
@@ -94,39 +94,37 @@ Functions that produce lists of Document objects.
                   (in "/.venv/" fname)
                   (in "/__pycache__/" fname))
               (do
-                (when verbose (error f"Ignored: {mime} {fname}"))
+                (logging.error f"Ignored: {mime} {fname}")
                 [False])
               (do
-                (when verbose
-                  (let [disp-str f"{mime} \"{fname}\""]
-                    (info disp-str)))
+                (let [disp-str f"Loading {mime} \"{fname}\""]
+                  (logging.info disp-str))
                 (try
                   (match mime
                       "application/pdf" (load-pdf fname)
                       "text/plain" (load-text fname)
                       otherwise (load-unstructured fname))
                   (except [UnicodeDecodeError]
-                    (error f"Failed to decode {fname} using utf-8: ignored.")
+                    (logging.error f"Failed to decode {fname} using utf-8: ignored.")
                     [False])
                   (except [e [TypeError]]
-                    (error f"Failed to embed or decode {fname}: ignored.")
-                    (error (repr e))
+                    (logging.error f"Failed to embed or decode {fname}: ignored.")
+                    (logging.error (repr e))
                     [False])
                   (except [e [Exception]]
-                    (error f"Failed with unknown error {fname}: ignored.")
-                    (error (repr e))
+                    (logging.error f"Failed with unknown error {fname}: ignored.")
+                    (logging.error (repr e))
                     [False])))))))
 
-(defn __load-file-convenience [root verbose fname]
+(defn __load-file-convenience [root fname]
   (try
-    (load-file (os.path.join root fname) :verbose verbose)
+    (load-file (os.path.join root fname))
     (except [e [Exception]]
-      (when verbose
-        (error f"Error: {fname}")
-        (error (repr e)))
+      (logging.error f"Error: {fname}")
+      (logging.error (repr e))
       [False])))
 
-(defn __parallel-load-files [root files [verbose True]]
+(defn __parallel-load-files [root files]
   "Internal, parallel mapping of load-file. Use load-dir instead.
    The number of worker threads is set as db.loader-threads in config.toml.
    The default is the number of cpus."
@@ -134,8 +132,10 @@ Functions that produce lists of Document objects.
   ;; FIXME: parallel tokenizer;
   ;; fast tokenizer parallel, disable since parallel at file level
   ;;
+  ;; FIXME: This is slower than loading in serial.
+  ;;
   (setv (get os.environ "TOKENIZERS_PARALLELISM") "false")
-  (let [f (partial __load-file-convenience root verbose)
+  (let [f (partial __load-file-convenience root)
         threads (or (config "storage" "loader-threads") (cpu-count))]
     (with [p (Pool :processes threads)]
       (->> (p.imap-unordered f files)
@@ -143,19 +143,31 @@ Functions that produce lists of Document objects.
            (filter None)
            (list)))))
 
-(defn load-dir [directory [verbose True]]
+(defn __serial-load-files [root files]
+  "Internal mapping of load-file. Use load-dir instead."
+  (let [f (partial __load-file-convenience root)]
+      (->> (map f files)
+           (chain.from-iterable)
+           (filter None)
+           (list))))
+
+(defn load-dir [directory]
   "Create an iterable of Document objects from all files in a directory (recursive)."
-  (gfor [root dirname files] (os.walk directory)
-        document (__parallel-load-files root files :verbose verbose)
-        document))
+  (let [file-list (with [c (spinner-context f"Listings files")]
+                    (list (os.walk directory)))]
+    (gfor [root dirname files] (track file-list
+                                      :description "[green italic]Ingesting files"
+                                      :transient True)
+          document (__serial-load-files root files)
+          document)))
 
 ; TODO: think about return values; maybe track lists of ignored files?
 
-(defn load [fname [verbose True]]
+(defn load [fname]
   "Just give me an iterable of document chunks!"
-  (when verbose (info "Loading documents."))
-  (cond (os.path.isdir fname) (load-dir fname :verbose verbose)
-        (os.path.isfile fname) (load-file fname :verbose verbose)
+  (logging.info "Listing documents.")
+  (cond (os.path.isdir fname) (load-dir fname)
+        (os.path.isfile fname) (load-file fname)
         :else (raise (FileNotFoundError fname))))
 
 
@@ -163,48 +175,30 @@ Functions that produce lists of Document objects.
 ;;; functions to load documents from other sources : ? -> Documents
 ;;; -----------------------------------------------------------------------------
 
-(defn wikipedia [topic]
+(defn wikipedia->docs [topic]
   "Get the full Wikipedia entry on a topic, as a list of Documents."
   (-> (WikipediaAPIWrapper)
     (.load topic)
     (splitter.split-documents)))
 
-(defn _get-url [url]
-  "Fetch a URL's content as text."
-  ; TODO: some error handling
-  (-> url
-      (requests.get)
-      (. text)))
-
-(defn url [urls [verbose True]]
+(defn url->docs [urls]
   "Create single list of document objects from a list of URLs (or single URL), via markdown."
-  (if (isinstance urls str) ; single url really
+  (if (isinstance urls str) ; single url at this point, really
       (let [splitter (MarkdownTextSplitter :chunk-size (config "storage" "chunk-size-chars"))
             markdown (-> urls
-                         (_get-url)
-                         (markdownify :heading-style "ATX"))]
+                         (url->markdown))]
         (splitter.create-documents [markdown]
                                    :metadatas [{"source" urls "url" urls}]))
-      (chain.from-iterable (lfor u urls (url u :verbose verbose)))))
+      (chain.from-iterable (lfor u urls (url u)))))
 
-
-;;; -----------------------------------------------------------------------------
-;;; handle results : Documents -> ?
-;;; -----------------------------------------------------------------------------
-
-(defn present [docs]
-  "Pretty-print a bunch of docs (e.g. from a query result)"
-  (for [d docs]
-    (console.rule)
-    (for [[a b] (.items d.metadata)]
-      (info f"[bold][magenta]{a}:[/magenta]\t[bright cyan]\"{b}\"[default]"))
-    (console.rule)
-    (info d.page-content)
-    (console.rule)))
-
-(defn sources [docs]
-  "The list of unique sources of documents."
-  (-> (lfor d docs (get d.metadata "source"))
-      (dict.fromkeys)
-      (list)))
- 
+(defn youtube->docs [youtube-id]
+  "Load and punctuate youtube transcript as list of documents.
+   Youtube 'transcripts' are just a long list of words with no punctuation
+   or identification of the speaker, so we apply a punctuation filter.
+   Youtube transcripts also tend to be long and rambling, so we need to
+   summarize them."
+  (let [text (youtube->text youtube-id)
+        url f"https://www.youtube.com/watch?v={youtube-id}"
+        doc (Document :page-content text
+                      :metadata {"source" url "youtube-id" youtube-id})]
+    (splitter.split-documents [doc])))

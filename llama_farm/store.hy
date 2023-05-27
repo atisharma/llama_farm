@@ -30,16 +30,16 @@ optional k value to specify the number of results.
 
 (require hyrule.argmove [-> ->>])
 
+(import logging)
 (import os)
 
 (import langchain.embeddings [HuggingFaceEmbeddings])
 (import langchain.vectorstores [Chroma FAISS])
-(import langchain.schema [Document])
 (import langchain.docstore.in_memory [InMemoryDocstore])
 
 (import .utils [config hash-id])
-(import .documents [load url])
-(import .interface [console info error])
+(import .documents [load url->docs])
+(import .interface [console spinner-context])
 
 
 (setv embedding (HuggingFaceEmbeddings :model-name (config "storage" "embedding")))
@@ -94,31 +94,32 @@ optional k value to specify the number of results.
     ; but let's not over-engineer this yet
     (match db.kind
            "chroma" (do
-                      (info "Deleting documents to be replaced.")
+                      (logging.info "Deleting documents to be replaced.")
                       (db._collection.delete uids)
                       (db.index.remove-ids)
-                      (info f"Adding {(len uids)} documents.")
+                      (logging.info f"Adding {(len uids)} documents.")
                       (db.add_documents udocs :ids uids)
-                      (info f"Saving vector store to {db.path}/.")
+                      (logging.info f"Saving vector store to {db.path}/.")
                       (db.persist))
            "faiss" (do
                      ; only insert docs that aren't already in the db
                      (let [existing-ids (set (.values db.index-to-docstore-id))
                            new-ids (list (.difference (set uids) existing-ids))
                            new-docs (lfor i new-ids (get docs-map i))]
-                       (info f"Adding {(len new-ids)} new documents, ignoring {(- (len uids) (len new-ids))} duplicates.")
-                       (when (len new-ids)
-                         (db.add_documents new-docs :ids new-ids)
-                         (info f"Saving vector store to {db.path}/.")
-                         (db.save-local db.path)))))))
+                       (with [c (spinner-context f"Adding {(len new-ids)} new documents, ignoring {(- (len uids) (len new-ids))} duplicates.")]
+                         ;(info f"Adding {(len new-ids)} new documents, ignoring {(- (len uids) (len new-ids))} duplicates.")
+                         (when (len new-ids)
+                             (db.add_documents new-docs :ids new-ids)
+                             (logging.info f"Saving vector store to {db.path}/.")
+                             (db.save-local db.path))))))))
 
-(defn ingest-files [db fname [verbose True]]
+(defn ingest-files [db fname]
   "Load files or directories and ingest them."
-  (ingest-docs db (load fname :verbose verbose)))
+  (ingest-docs db (load fname))) 
 
-(defn ingest-urls [db urls [verbose True]]
+(defn ingest-urls [db urls] 
   "Load url(s) and ingest them."
-  (ingest-docs db (url urls :verbose verbose)))
+  (ingest-docs db (url->docs urls)))
 
 ;;; -----------------------------------------------------------------------------
 ;;; search : vectorstore, query -> Documents

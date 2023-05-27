@@ -57,10 +57,10 @@ Can talk to OpenAI or Oobabooga/text-generation-webui's openai-compatible API.
   ; we go via langchain's ridiculous Message object.
   ; Construct API instance on the fly because it sets variables at the class level.
   (->> chat-history
-   (_replace-role bot)
-   (+ [(system system-prompt)])   ;; adding the system prompt at the start may be a bit weak
-   (map dict->msg)
-   (list)
-   ((model bot))
-   (msg->dict)
-   (| {"bot" bot})))
+       (_replace-role bot)
+       (+ [(system system-prompt)])   ;; adding the system prompt at the start may be a bit weak
+       (map dict->msg)
+       (list)
+       ((model bot))
+       (msg->dict)
+       (| {"bot" bot})))

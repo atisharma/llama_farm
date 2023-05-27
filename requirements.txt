@@ -18,3 +18,7 @@ markdownify
 rich
 python-magic
 unstructured
+youtube-transcript-api
+deepmultilingualpunctuation
+protobuf==3.20.1
+tiktoken

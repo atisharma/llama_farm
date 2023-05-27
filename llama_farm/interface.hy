@@ -12,6 +12,7 @@ Functions that relate to output on the screen.
 (import rich.columns [Columns])
 (import rich.table [Table])
 (import rich.text [Text])
+(import rich.progress [track])
 (import rich.color [ANSI_COLOR_NAMES])
 
 
@@ -83,7 +84,8 @@ Functions that relate to output on the screen.
   "Format and print the chat history to the screen."
   (let [margin (get-margin chat-history)]
     (console.rule)
-    (console.print "[italic]Chat history:[/italic]")
+    (console.print "Chat history:" :style "green italic")
+    (console.print)
     (for [msg chat-history]
       (print-message msg margin :left-padding 4))
     (console.rule)))
@@ -103,6 +105,10 @@ Functions that relate to output on the screen.
       (Markdown)
       (Padding #(0 2 0 0))
       (console.print :justify "left" :style style)))
+
+(defn exception []
+  "Formats and prints the current exception."
+  (console.print-exception))
 
 (defn bot-color [bot]
   "The signature color of the bot, derived from its name."
