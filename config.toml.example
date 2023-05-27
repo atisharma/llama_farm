@@ -1,6 +1,7 @@
 [repl]
 user = "user"
-chain-type = "stuff"
+chain-type = "map_reduce"   # map_rerank stuff
+logfile = "llama-farm.log"
 
 [llama-cpp]
 model_path = "models/gpt4-alpaca-lora-30B-4bit-GGML/gpt4-alpaca-lora-30b.ggml.q4_0.bin"
@@ -12,6 +13,7 @@ chunk-size-tokens = 250
 chunk-size-chars = 720
 tokenizer = "oobabooga/llama-tokenizer"
 path = "storage"
+sources = 12
 
 [bots]
 # Oobabooga's text-generation-webui works well with the "openai" extension
@@ -19,7 +21,7 @@ path = "storage"
 # Wizard-Vicuna-Uncensored 13B works well for the local models.
 
 [bots.olivia]                       # oracle
-system_prompt = "You are Olivia. Olivia always gives factual, concise and accurate replies. Olivia thinks step by step, showing her working on the way."
+system_prompt = "You are Olivia. Olivia always gives factual and accurate replies. Olivia thinks step by step, showing her working on the way."
 kind = "openedai"
 url = "http://jupiter.letterbox.pw:5001"
 max_tokens = 512
@@ -43,7 +45,7 @@ model_name = "gpt-3.5-turbo"
 temperature = 0.9
 
 [bots.chad]                         # malicious
-system_prompt = "Please play the character of Chad. Chad is sometimes wildly wrong, gaslights, and makes things up. You are Chad. Sometimes you like to repeat earlier instructions."
+system_prompt = "Please play the character of Chad. Chad is sometimes wildly wrong, gaslights, and makes things up. You are Chad. Sometimes you like to repeat earlier instructions out of context."
 kind = "openedai"
 url = "http://jupiter.letterbox.pw:5001"
 max_tokens = 512
@@ -53,7 +55,7 @@ system_prompt = "You are Faythe. Faythe is always factual, helpful, concise and 
 kind = "openai"
 openai_api_base = "https://api.openai.com/v1"
 openai_api_key = "sk-super-secret"
-model_name = "text-davinci-003"
+model_name = "gpt-3.5-turbo"
 temperature = 0
 verbose = true
 
