@@ -17,3 +17,5 @@ The code is in [Hy 0.26.0](https://docs.hylang.org).
 
 Please try to keep consistent with the style - more like clojure and less like java.
 If you are more used to python, you can use `hy2py` to see what the existing code looks like.
+
+Please use [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/).
