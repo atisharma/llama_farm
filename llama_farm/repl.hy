@@ -42,27 +42,21 @@ it, and passes it to the appropriate action."
     (try
       (readline.read-history-file history-file)
       (except [e [FileNotFoundError]]))
-    (try
-      (while True
-        (try
-          (let [username (config "repl" "user")
-                margin (get-margin chat-history)
-                user-prompt (format-msg (user "" username) margin)
-                line (.strip (rlinput user-prompt))]
-            (cond (or (.startswith line "/q") (.startswith line "/exit")) (break)
-                  :else (when line
-                          (let [user-msg (user line username)]
-                            (setv chat-history
-                                  (parse user-msg chat-history))))))
-          (except [KeyboardInterrupt]
-            (print)
-            (error "Interrupted"))
-          (except [EOFError]
-            (break))
-          (except [Exception]
-            (exception))))
-      (except [EOFError]
-        (print)))
+    (while True
+      (try
+        (let [username (config "repl" "user")
+              margin (get-margin chat-history)
+              user-prompt (format-msg (user "" username) margin)
+              line (.strip (rlinput user-prompt))]
+          (when line
+            (let [user-msg (user line username)]
+              (setv chat-history
+                    (parse user-msg chat-history)))))
+        (except [EOFError KeyboardInterrupt]
+          (print)
+          (error "**/quit** to exit"))
+        (except [Exception]
+          (exception))))
     (print)
     (readline.write-history-file history-file)))
     

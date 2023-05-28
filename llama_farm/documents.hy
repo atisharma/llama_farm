@@ -193,7 +193,7 @@ Functions that produce lists of Document objects.
   (if (isinstance urls str) ; single url at this point, really
       (let [splitter (MarkdownTextSplitter :chunk-size (config "storage" "chunk-size-chars"))
             markdown (-> urls
-                         (url->markdown))]
+                         (url->text))]
         (splitter.create-documents [markdown]
                                    :metadatas [{"source" urls "url" urls}]))
       (chain.from-iterable (lfor u urls (url u)))))

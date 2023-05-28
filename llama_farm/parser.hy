@@ -42,7 +42,7 @@ either internally or to a chatbot / langchain.
 
 ;; TODO: remove global state for current topic and context.
 (setv bot (get (bots) 0)
-      current-topic "No topic set yet."
+      current-topic "No topic is set yet."
       context "")
 
 (setv knowledge-store (store.faiss (os.path.join (config "storage" "path")
@@ -92,6 +92,8 @@ The usual readline shortcuts should be available.
 #### Knowledge management
 
 - **/recall**                       Make a query against the bot's long-term memory
+- **/context**                      Reset and show the current context (in case the topic changed quickly)
+- **/topic**                        Show the current topic
 - **/ingest 'filename(s)'**         Ingest a filename, list of filenames (separated by spaces, no quotes), or directory (recursively) to the knowledge store  
 - **/ingest 'urls(s)'**             Ingest a webpage at a single url or list of urls (separated by spaces, no quotes)
 ")
@@ -149,27 +151,31 @@ The usual readline shortcuts should be available.
        (tokenizer.encode)
        (len)))
 
-(defn remember [bot chat-history]
+(defn truncate [bot chat-history]
   "Shorten the chat history if it gets too long.
    Split it in two and store the first part in the chat store.
    Set a new context.
    Return the new chat history."
   (global context current-topic)
-  (with [c (spinner-context f"{(.capitalize bot)} is rembering the conversation...")]
-    (let [context-length (:context-length (params bot) 1250)
-          token-length (token-count chat-history)
-          chat-length (len chat-history)]
-      (if (and (> token-length context-length)
-               (> (len chat-history) 12))
-        (let [pre (cut chat-history 8)
-              post (cut chat-history 8 None)
-              pre-topic (topic bot pre)
-              docs (chat->docs pre pre-topic)]
-          (store.ingest-docs chat-store docs)
-          (setv current-topic (topic bot pre))
-          (setv context (recall chat-store bot current-topic))
-          post)
-        chat-history))))
+  (let [context-length (:context-length (params bot) 1250)
+        token-length (token-count chat-history)
+        chat-length (len chat-history)]
+    (if (and (> token-length context-length)
+             (> (len chat-history) 12))
+      (let [pre (cut chat-history 8)
+            post (cut chat-history 8 None)]
+        (commit-chat bot pre)
+        (setv current-topic (topic bot pre))
+        (setv context (recall chat-store bot current-topic))
+        post)
+      chat-history)))
+
+(defn commit-chat [bot chat]
+  "Save a chat history fragment to the chat store."
+  (with [c (spinner-context f"{(.capitalize bot)} is remembering the conversation...")]
+    (let [chat-topic (topic bot chat)
+          docs (chat->docs chat chat-topic)]
+      (store.ingest-docs chat-store docs))))
 
 (defn recall [db bot topic]
   "Summarise a topic from a memory store (usually the chat).
@@ -328,9 +334,15 @@ The usual readline shortcuts should be available.
       ;(= command "/remember") (setv chat-history (remember bot chat-history))
       (= command "/recall") (info (recall chat-store bot args))
       (= command "/topic") (info current-topic)
-      (= command "/context") (info context)
+      (= command "/context") (do
+                               (setv context (recall chat-store bot current-topic))
+                               (info context))
       ;;
       (.startswith line "/") (error f"Unknown command **{command}**.")
+      (or (.startswith line "/q")
+          (.startswith line "/exit")) (do
+                                        (commit-chat bot chat-history)
+                                        (raise EOFError))
       ;;
       ;; otherwise, normal chat
       :else (do (with [c (spinner-context f"{(.capitalize bot)} is thinking...")]
