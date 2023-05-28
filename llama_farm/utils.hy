@@ -94,6 +94,12 @@
   (+ [(system system-message)]
      chat-history))
 
+(defn format-chat-history [chat-history]
+  "Format the chat history for saving to the store."
+  (.join "\n"
+         (lfor m chat-history
+               f"{(:bot m)}: {(:content m)}")))
+
 ;; possibly defunct - consider removing the following
 
 (defn dprint [#* args]

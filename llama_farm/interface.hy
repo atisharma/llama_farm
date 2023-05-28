@@ -81,7 +81,7 @@ Functions that relate to output on the screen.
   (.replace s "\n" "  \n"))
 
 (defn print-chat-history [chat-history [tokens None]]
-  "Format and print the chat history to the screen."
+  "Format and print the chat history to the console."
   (let [margin (get-margin chat-history)]
     (console.rule)
     (console.print "Chat history:" :style "green italic")
@@ -89,7 +89,7 @@ Functions that relate to output on the screen.
     (for [msg chat-history]
       (print-message msg margin :left-padding 4))
     (when tokens
-      (console.print f"History uses ~{tokens} tokens." :style "green italic"))
+      (console.print f"History uses ~ {tokens} tokens." :style "green italic"))
     (console.rule)))
 
 (defn info [s [style "green italic"]]

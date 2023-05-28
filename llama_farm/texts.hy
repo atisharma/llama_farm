@@ -4,6 +4,8 @@ Functions that produce strings from sources.
 
 (require hyrule.argmove [-> ->>])
 
+(import datetime [datetime])
+
 (import requests)
 (import markdownify [markdownify])
 (import lxml)
@@ -37,3 +39,23 @@ Functions that produce strings from sources.
         (cleaner.clean_html)
         (lxml.html.tostring)
         (markdownify :heading-style "ATX" :strip "style"))))
+
+(defn ddg->text [topic]
+  "Get the DuckDuckGo summary on a topic (as text)."
+  (.run (DuckDuckGoSearchRun) topic))
+
+(defn arxiv->text [topic]
+  "Get the arxiv summary on a topic (as text)."
+  (.run (ArxivAPIWrapper) topic))
+
+(defn today->text [[fmt "%Y-%m-%d"]]
+  "Today's date (as text)."
+  (.strftime (datetime.today) fmt))
+
+(defn now->text []
+  "Current timestamp in isoformat (as text)."
+  (.isoformat (datetime.today)))
+
+(defn wikipedia-summary->text [topic]
+  "Get the Wikipedia summary on a topic (as text)."
+  (.run (WikipediaAPIWrapper) topic))

@@ -7,7 +7,6 @@ Functions that return text from queries.
 (require hyrule.argmove [-> ->> as->])
 
 (import itertools [repeat])
-(import datetime [datetime])
 
 (import langchain.chains [RetrievalQA
                           VectorDBQA
@@ -21,7 +20,7 @@ Functions that return text from queries.
 (import langchain.schema [BaseRetriever])
 
 (import .texts [url->text youtube->text])
-(import .documents [url->docs youtube->docs])
+(import .documents [url->docs youtube->docs file->docs])
 
 
 ;;; -----------------------------------------------------------------------------
@@ -37,6 +36,11 @@ Functions that return text from queries.
   "Converts a Youtube transcript to docs via clean markdown."
   (defn get-relevant-documents [youtube-id]
     (youtube->docs youtube-id)))
+
+(defclass FileRetriever [BaseRetriever]
+  "Converts a file to docs."
+  (defn get-relevant-documents [fname]
+    (file->docs fname)))
 
 ;;; -----------------------------------------------------------------------------
 ;;; LLM query functions : db | retriever, llm, query -> text
@@ -140,25 +144,18 @@ Functions that return text from queries.
                   :retriever (URLRetriever)
                   :chain-type chain-type))
 
+;; FIXME: FileRetriever needs to be passed the specific filename not the whole query
+(defn chat-file [#* args
+                 [chain-type "stuff"]
+                 #** kwargs]
+  "Function that converses over a file and chat history."
+  (chat-retriever #* args
+                  :retriever (FileRetriever)
+                  :chain-type chain-type))
+
 ;;; -----------------------------------------------------------------------------
-;;; Other query functions : query | ? -> text
+;;; Summary / query functions : model, query -> text
 ;;; -----------------------------------------------------------------------------
-
-(defn ddg [topic]
-  "Get the DuckDuckGo summary on a topic (as text)."
-  (.run (DuckDuckGoSearchRun) topic))
-
-(defn arxiv [topic]
-  "Get the arxiv summary on a topic (as text)."
-  (.run (ArxivAPIWrapper) topic))
-
-(defn today [[fmt "%Y-%m-%d"]]
-  "Today's date (as text)."
-  (.strftime (datetime.today) fmt))
-
-(defn now []
-  "Current timestamp in isoformat (as text)."
-  (.isoformat (datetime.today)))
 
 (defn summarize [model text]
   "Summarize a long text (as text)."
@@ -166,10 +163,6 @@ Functions that return text from queries.
                                             :chain_type "map_reduce")
         summarize-document-chain (AnalyzeDocumentChain :combine-docs-chain summary-chain)]
     (.run summarize-document-chain text)))
-
-(defn summarize-wikipedia [topic]
-  "Get the Wikipedia summary on a topic (as text)."
-  (.run (WikipediaAPIWrapper) topic))
 
 (defn summarize-youtube [model youtube-id]
   "Summarize a youtube video transcript (as text)."

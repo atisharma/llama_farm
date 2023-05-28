@@ -25,9 +25,9 @@ Functions that produce lists of Document objects.
 (import langchain.utilities [WikipediaAPIWrapper])
 (import langchain.schema [Document])
 
-(import .utils [config])
+(import .utils [config format-chat-history])
 (import .interface [track spinner-context])
-(import .texts [youtube->text url->text])
+(import .texts [youtube->text url->text now->text])
 
 
 (setv ignored-extensions ["log" "dat" "aux" "icon" "tikz"
@@ -55,7 +55,7 @@ Functions that produce lists of Document objects.
 ;;; functions to load documents from files : fname, ? -> Documents
 ;;; -----------------------------------------------------------------------------
 
-(defn load-unstructured [fname]
+(defn unstructured->docs [fname]
   "Create list of document objects from a file of any type, using Unstructured."
   (let [loader (UnstructuredFileLoader fname)]
     (try
@@ -63,14 +63,14 @@ Functions that produce lists of Document objects.
       (except [ValueError]
         [False]))))
 
-(defn load-text [fname] 
+(defn textfile->docs [fname] 
   "Create list of document objects from a text file, using the tokenizer."
   ; FIXME: manage plain text not decoding with utf-8
   (-> fname
     (TextLoader)
     (.load-and-split :text-splitter splitter)))
 
-(defn load-pdf [fname] 
+(defn pdf->docs [fname] 
   "Create list of document objects from a pdf file."
   (-> fname
     (PyMuPDFLoader)
@@ -80,8 +80,8 @@ Functions that produce lists of Document objects.
   "Create list of documents from audio, via whisper transcription."
   [False])
 
-(defn load-file [fname]
-  "Intelligently (ha!) load a file as a iterable of Document objects."
+(defn file->docs [fname]
+  "Intelligently (ha!) load a single file as a iterable of Document objects."
   (filter None
         (let [mime (magic.from-file fname :mime True)
               [mime-type mime-subtype] (.split mime "/")
@@ -101,9 +101,9 @@ Functions that produce lists of Document objects.
                   (logging.info disp-str))
                 (try
                   (match mime
-                      "application/pdf" (load-pdf fname)
-                      "text/plain" (load-text fname)
-                      otherwise (load-unstructured fname))
+                      "application/pdf" (pdf->docs fname)
+                      "text/plain" (textfile->docs fname)
+                      otherwise (unstructured->docs fname))
                   (except [UnicodeDecodeError]
                     (logging.error f"Failed to decode {fname} using utf-8: ignored.")
                     [False])
@@ -118,14 +118,14 @@ Functions that produce lists of Document objects.
 
 (defn __load-file-convenience [root fname]
   (try
-    (load-file (os.path.join root fname))
+    (file->docs (os.path.join root fname))
     (except [e [Exception]]
       (logging.error f"Error: {fname}")
       (logging.error (repr e))
       [False])))
 
 (defn __parallel-load-files [root files]
-  "Internal, parallel mapping of load-file. Use load-dir instead.
+  "Internal, parallel mapping of file->docs Use dir->docs instead.
    The number of worker threads is set as db.loader-threads in config.toml.
    The default is the number of cpus."
   ;;
@@ -144,14 +144,14 @@ Functions that produce lists of Document objects.
            (list)))))
 
 (defn __serial-load-files [root files]
-  "Internal mapping of load-file. Use load-dir instead."
+  "Internal mapping of file->docs Use dir->docs instead."
   (let [f (partial __load-file-convenience root)]
       (->> (map f files)
            (chain.from-iterable)
            (filter None)
            (list))))
 
-(defn load-dir [directory]
+(defn dir->docs [directory]
   "Create an iterable of Document objects from all files in a directory (recursive)."
   (let [file-list (with [c (spinner-context f"Listings files")]
                     (list (os.walk directory)))]
@@ -166,14 +166,21 @@ Functions that produce lists of Document objects.
 (defn load [fname]
   "Just give me an iterable of document chunks!"
   (logging.info "Listing documents.")
-  (cond (os.path.isdir fname) (load-dir fname)
-        (os.path.isfile fname) (load-file fname)
+  (cond (os.path.isdir fname) (dir->docs fname)
+        (os.path.isfile fname) (file->docs fname)
         :else (raise (FileNotFoundError fname))))
-
 
 ;;; -----------------------------------------------------------------------------
 ;;; functions to load documents from other sources : ? -> Documents
 ;;; -----------------------------------------------------------------------------
+
+(defn chat->docs [chat-history topic]
+  "Formats a chat history (list of message dicts) as docs."
+  (let [chat-string (format-chat-history chat-history)]
+    (splitter.create-documents [chat-string]
+                               :metadatas [{"source" "chat"
+                                            "topic" topic
+                                            "time" (now->text)}])))
 
 (defn wikipedia->docs [topic]
   "Get the full Wikipedia entry on a topic, as a list of Documents."

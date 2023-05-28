@@ -14,9 +14,9 @@ directory.
 
 Then, you can call the functions to ingest and load documents, as well
 as perform retrieval searches. The ingest function takes a list of
-document objects and adds them to the vector store. The load-text and
-load-pdf functions are used to create a list of document objects from
-text and pdf files, respectively. The load-dir function operates
+document objects and adds them to the vector store. The text->docs and
+pdf->docs functions are used to create a list of document objects from
+text and pdf files, respectively. The dir->docs function operates
 recursively over a directory's contents.
 
 Finally, the similarity and relevance functions can be used to perform
