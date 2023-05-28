@@ -4,6 +4,7 @@ chain-type = "map_reduce"   # map_rerank stuff
 logfile = "llama-farm.log"
 
 [llama-cpp]
+# not implemented yet
 model_path = "models/gpt4-alpaca-lora-30B-4bit-GGML/gpt4-alpaca-lora-30b.ggml.q4_0.bin"
 gpu_layers = 40
 
