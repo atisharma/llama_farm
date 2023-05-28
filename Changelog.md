@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### Bug Fixes
+
+- Add a changelog
+- Handle save-on-quit of chat history
+
 ### Documentation
 
 - Update readme, config, etc.

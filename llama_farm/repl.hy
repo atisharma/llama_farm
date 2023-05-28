@@ -15,7 +15,7 @@ The main REPL where we chat to the bot and issue commands.
 (import readline)
 
 (import .utils [config rlinput user])
-(import .parser [parse set-bot])
+(import .parser [parse set-bot commit-chat bot])
 (import .interface [banner
                     clear
                     console
@@ -48,10 +48,13 @@ it, and passes it to the appropriate action."
               margin (get-margin chat-history)
               user-prompt (format-msg (user "" username) margin)
               line (.strip (rlinput user-prompt))]
-          (when line
-            (let [user-msg (user line username)]
-              (setv chat-history
-                    (parse user-msg chat-history)))))
+          (cond (.startswith line "/quit!") (break)
+                (or (.startswith line "/q")
+                    (.startswith line "/exit")) (do (commit-chat bot chat-history)
+                                                    (break))
+                line (let [user-msg (user line username)]
+                       (setv chat-history
+                             (parse user-msg chat-history)))))
         (except [EOFError KeyboardInterrupt]
           (print)
           (error "**/quit** to exit"))

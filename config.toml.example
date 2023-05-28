@@ -14,7 +14,7 @@ chunk-size-tokens = 250
 chunk-size-chars = 720
 tokenizer = "oobabooga/llama-tokenizer"
 path = "storage"
-sources = 12
+sources = 6
 
 [bots]
 # Oobabooga's text-generation-webui works well with the "openai" extension

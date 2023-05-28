@@ -14,7 +14,7 @@ either internally or to a chatbot / langchain.
 (import .models [bots model params reply])
 (import .documents [tokenizer chat->docs])
 (import .utils [config is-url msg system inject user])
-(import .texts [now->text])
+(import .texts [now->text today->text])
 (import .interface [banner
                     bot-color
                     clear
@@ -157,6 +157,8 @@ The usual readline shortcuts should be available.
    Set a new context.
    Return the new chat history."
   (global context current-topic)
+  (unless context
+    (recall chat-store bot (today->text)))
   (let [context-length (:context-length (params bot) 1250)
         token-length (token-count chat-history)
         chat-length (len chat-history)]
@@ -172,10 +174,9 @@ The usual readline shortcuts should be available.
 
 (defn commit-chat [bot chat]
   "Save a chat history fragment to the chat store."
-  (with [c (spinner-context f"{(.capitalize bot)} is remembering the conversation...")]
-    (let [chat-topic (topic bot chat)
-          docs (chat->docs chat chat-topic)]
-      (store.ingest-docs chat-store docs))))
+  (let [chat-topic (topic bot chat)
+        docs (chat->docs chat chat-topic)]
+    (store.ingest-docs chat-store docs)))
 
 (defn recall [db bot topic]
   "Summarise a topic from a memory store (usually the chat).
@@ -279,7 +280,7 @@ The usual readline shortcuts should be available.
         [_command _ args] (.partition line " ")
         command (.lower _command)]
     (unless (.startswith line "/")
-      (setv chat-history (remember bot chat-history))
+      (setv chat-history (truncate bot chat-history))
       (.append chat-history user-message))
     (cond
       ;; commands that give a reply
@@ -331,18 +332,15 @@ The usual readline shortcuts should be available.
       ;;
       ;; vectorstore commands
       (= command "/ingest") (_ingest knowledge-store args)
-      ;(= command "/remember") (setv chat-history (remember bot chat-history))
       (= command "/recall") (info (recall chat-store bot args))
-      (= command "/topic") (info current-topic)
+      (= command "/topic") (do
+                             (setv current-topic (topic bot chat-history))
+                             (info current-topic))
       (= command "/context") (do
                                (setv context (recall chat-store bot current-topic))
                                (info context))
       ;;
       (.startswith line "/") (error f"Unknown command **{command}**.")
-      (or (.startswith line "/q")
-          (.startswith line "/exit")) (do
-                                        (commit-chat bot chat-history)
-                                        (raise EOFError))
       ;;
       ;; otherwise, normal chat
       :else (do (with [c (spinner-context f"{(.capitalize bot)} is thinking...")]
