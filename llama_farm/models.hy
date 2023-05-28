@@ -52,13 +52,12 @@ Can talk to OpenAI or Oobabooga/text-generation-webui's openai-compatible API.
          "openai" (lfor m chat-history {#** m "role" (.replace (:role m) "bot" "assistant")})
          _ chat-history))
 
-(defn reply [bot chat-history system-prompt]
+(defn reply [bot chat-history]
   "Return the reply message from the chat model."
   ; we go via langchain's ridiculous Message object.
   ; Construct API instance on the fly because it sets variables at the class level.
   (->> chat-history
        (_replace-role bot)
-       (+ [(system system-prompt)])   ;; adding the system prompt at the start may be a bit weak
        (map dict->msg)
        (list)
        ((model bot))

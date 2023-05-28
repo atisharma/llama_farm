@@ -2,8 +2,7 @@
 The main REPL where we chat to the bot and issue commands.
 "
 
-;; TODO: consider changing / command syntax to [] or {} or other paired
-;; TODO: handle Ctrl-C
+;; TODO: consider changing `/` command syntax to `[]` or `{}` or other paired
 
 (require hyrule.argmove [-> ->> as->])
 (require hyrule.control [unless])
@@ -35,7 +34,7 @@ it, and passes it to the appropriate action."
                        :encoding "utf-8")
   (logging.info f"Starting repl at {(.isoformat (datetime.today))}")
   (banner)
-  (info "Type **/help** for help\n")
+  (info "Enter **/help** for help\n")
   (console.rule)
   (set-bot)
   (let [chat-history []

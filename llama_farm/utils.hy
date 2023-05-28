@@ -89,6 +89,10 @@
 (defn user [content username]
   (msg "user" content username))
 
+(defn inject [system-message chat-history]
+  "Prepend the chat history with the system message."
+  (+ [(system system-message)]
+     chat-history))
 
 ;; possibly defunct - consider removing the following
 

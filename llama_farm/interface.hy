@@ -80,7 +80,7 @@ Functions that relate to output on the screen.
   ;; and defines the antipattern of preserving them with a double space.
   (.replace s "\n" "  \n"))
 
-(defn print-chat-history [chat-history]
+(defn print-chat-history [chat-history [tokens None]]
   "Format and print the chat history to the screen."
   (let [margin (get-margin chat-history)]
     (console.rule)
@@ -88,6 +88,8 @@ Functions that relate to output on the screen.
     (console.print)
     (for [msg chat-history]
       (print-message msg margin :left-padding 4))
+    (when tokens
+      (console.print f"History uses ~{tokens} tokens." :style "green italic"))
     (console.rule)))
 
 (defn info [s [style "green italic"]]
