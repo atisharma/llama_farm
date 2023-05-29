@@ -46,7 +46,7 @@ Can talk to OpenAI or Oobabooga/text-generation-webui's openai-compatible API.
 
 (defn _replace-role [bot chat-history]
   "Replace role a with b in all messages for openedai.
-   OpenAI expects 'assistant' role, but OpenedAI bots expect 'bot'."
+   OpenAI expects 'assistant' role, but OpenedAI (old version) expects 'bot'."
   (match (:kind (params bot) None)
          "openedai" (lfor m chat-history {#** m "role" (.replace (:role m) "assistant" "bot")})
          "openai" (lfor m chat-history {#** m "role" (.replace (:role m) "bot" "assistant")})
@@ -57,7 +57,7 @@ Can talk to OpenAI or Oobabooga/text-generation-webui's openai-compatible API.
   ; we go via langchain's ridiculous Message object.
   ; Construct API instance on the fly because it sets variables at the class level.
   (->> chat-history
-       (_replace-role bot)
+       ;(_replace-role bot)
        (map dict->msg)
        (list)
        ((model bot))

@@ -8,7 +8,7 @@ It has a long-term chat memory that recalls conversation relevant to the current
 Ask it questions about your own documents and information, stuff on arXiv, youtube or wikipedia.
 I recommend you are selective about what you ingest as the quality of information available is more important than the quantity.
 
-Llama-farm uses hwchase17/langchain, oobabooga/text-generation-webui (via its OpenedAI API extension) for local models, and various other bricks. It works surprisingly well with Wizard-Vicuna-13B-Uncensored. It even works very well with WizardLM-7B!
+Llama-farm uses hwchase17/langchain to talk to oobabooga/text-generation-webui (via its OpenedAI API extension) or lm-sys/FastChat for local models, and various other bricks. It works surprisingly well with Wizard-Vicuna-13B-Uncensored. It even works very well with WizardLM-7B!
 
 Copy the `config.toml.example` to `config.toml`.
 To use openAI, you need to set your key in `config.toml`.
