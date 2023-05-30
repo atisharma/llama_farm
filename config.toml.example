@@ -1,4 +1,3 @@
-[repl]
 user = "user"
 chain-type = "map_reduce"   # map_rerank stuff
 logfile = "llama-farm.log"

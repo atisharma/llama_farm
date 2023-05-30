@@ -29,7 +29,7 @@ The main REPL where we chat to the bot and issue commands.
 (defn run []
   "Launch the REPL, which takes user input, parses
 it, and passes it to the appropriate action."
-  (logging.basicConfig :filename (config "repl" "logfile")
+  (logging.basicConfig :filename (config "logfile")
                        :level logging.WARNING
                        :encoding "utf-8")
   (logging.info f"Starting repl at {(.isoformat (datetime.today))}")
@@ -44,7 +44,7 @@ it, and passes it to the appropriate action."
       (except [e [FileNotFoundError]]))
     (while True
       (try
-        (let [username (config "repl" "user")
+        (let [username (config "user")
               margin (get-margin chat-history)
               user-prompt (format-msg (user "" username) margin)
               line (.strip (rlinput user-prompt))]
@@ -53,8 +53,7 @@ it, and passes it to the appropriate action."
                     (.startswith line "/exit")) (do (commit-chat bot chat-history)
                                                     (break))
                 line (let [user-msg (user line username)]
-                       (setv chat-history
-                             (parse user-msg chat-history)))))
+                       (setv chat-history (parse user-msg chat-history)))))
         (except [KeyboardInterrupt]
           (print)
           (error "**/quit** to exit"))

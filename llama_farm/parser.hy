@@ -135,7 +135,7 @@ either internally or to a chatbot / langchain.
 (defn recall [db bot topic]
   "Summarise a topic from a memory store (usually the chat).
    Return as text which may then be used for injection in the system message."
-  (let [username (or (.lower (config "repl" "user")) "user")
+  (let [username (or (.lower (config "user")) "user")
         query f"{topic}\n{bot}:\n{username}:"
         k (or (config "storage" "sources") 6)
         docs (store.similarity db query :k k)
@@ -144,7 +144,7 @@ either internally or to a chatbot / langchain.
 
 (defn topic [bot chat-history]
   "Determine the current topic of conversation from the chat history."
-  (let [username (or (config "repl" "user") "user")
+  (let [username (or (config "user") "user")
         topic-msg (user "Please summarize the conversation so far in less than ten words." username)
         topic-reply (reply bot (inject "Your sole purpose is to express the topic of conversation in one short sentence."
                                        (+ chat-history [topic-msg])))]
@@ -226,7 +226,7 @@ either internally or to a chatbot / langchain.
    Do the action resulting from `line`, and return the updated chat history."
   (global bot context current-topic)
   (clear-status-line)
-  (let [chain-type (or (config "repl" "chain-type") "stuff")
+  (let [chain-type (or (config "chain-type") "stuff")
         bot-prompt (:system_prompt (params bot) "")
         bot-name (.capitalize bot)
         time-prompt f"Today's date and time is {(now->text)}."
@@ -242,16 +242,27 @@ either internally or to a chatbot / langchain.
       ;; commands that give a reply
       ;;
       ;; move this to a function, and call with different chain-types, k, search type.
-      (= command "/ask") (.extend chat-history (enquire-db bot user-message args (inject system-prompt chat-history)
-                                                           :chain-type chain-type))
-      (= command "/wikipedia") (.extend chat-history (enquire-wikipedia bot user-message args (inject system-prompt chat-history)
-                                                                        :chain-type chain-type))
-      (= command "/arxiv") (.extend chat-history (enquire-arxiv
-                                                   bot
-                                                   user-message
-                                                   args
-                                                   (inject system-prompt chat-history)
-                                                   :chain-type chain-type))
+      (= command "/ask") (.extend chat-history
+                                  (enquire-db
+                                    bot
+                                    user-message
+                                    args
+                                    (inject system-prompt chat-history)
+                                    :chain-type chain-type))
+      (= command "/wikipedia") (.extend chat-history
+                                        (enquire-wikipedia
+                                          bot
+                                          user-message
+                                          args
+                                          (inject system-prompt chat-history)
+                                          :chain-type chain-type))
+      (= command "/arxiv") (.extend chat-history
+                                    (enquire-arxiv
+                                      bot
+                                      user-message
+                                      args
+                                      (inject system-prompt chat-history)
+                                      :chain-type chain-type))
       (= command "/url") (try
                            (.extend chat-history (enquire-summarize-url bot
                                                                         user-message
@@ -282,7 +293,8 @@ either internally or to a chatbot / langchain.
       ;; bot / chat commands
       (= command "/bot") (set-bot args)
       (= command "/bots") (_list-bots)
-      (in command ["/history" "/hist"]) (print-chat-history chat-history :tokens (token-count (inject system-prompt chat-history)))
+      (in command ["/history" "/hist"]) (print-chat-history chat-history
+                                                            :tokens (token-count (inject system-prompt chat-history)))
       ;;
       ;; vectorstore commands
       (= command "/ingest") (_ingest knowledge-store args)

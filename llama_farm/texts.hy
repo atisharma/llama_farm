@@ -20,6 +20,7 @@ Functions that produce strings from sources.
   "Load and punctuate youtube transcript as text.
    Youtube 'transcripts' are just a long list of words with no punctuation
    or identification of the speaker, so we apply a punctuation filter.
+   !!! WARNING !!!
    This takes a fair amount of VRAM."
   (let [transcript (.get-transcript YouTubeTranscriptApi youtube-id)
         formatter (TextFormatter)
@@ -48,6 +49,10 @@ Functions that produce strings from sources.
   "Get the arxiv summary on a topic (as text)."
   (.run (ArxivAPIWrapper) topic))
 
+(defn wikipedia-summary->text [topic]
+  "Get the Wikipedia summary on a topic (as text)."
+  (.run (WikipediaAPIWrapper) topic))
+
 (defn today->text [[fmt "%Y-%m-%d"]]
   "Today's date (as text)."
   (.strftime (datetime.today) fmt))
@@ -58,7 +63,3 @@ Functions that produce strings from sources.
       (datetime.now)
       (.astimezone)
       (.isoformat)))
-
-(defn wikipedia-summary->text [topic]
-  "Get the Wikipedia summary on a topic (as text)."
-  (.run (WikipediaAPIWrapper) topic))
