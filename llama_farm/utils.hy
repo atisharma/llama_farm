@@ -98,6 +98,8 @@
 
 (defn format-chat-history [chat-history]
   "Format the chat history for saving to the store."
+  ;; this is not in .interface with the other formatters
+  ;; because it relates to the storage
   (.join "\n"
          (lfor m chat-history
                f"{(:bot m)}: {(:content m)}")))

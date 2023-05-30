@@ -3,7 +3,7 @@ To chat, just enter some text.
 Lines beginning with **/** are parsed as commands.  
 The usual readline shortcuts should be available.
 
-#### Commands
+### Commands
 
 - **/help /h**                      Show this helpful text
 - **/quit /q /exit**                Quit
@@ -12,13 +12,13 @@ The usual readline shortcuts should be available.
 - **/clear**                        Clear the display
 - **/markdown**                     Toggle markdown rendering of messages
 
-#### Bots
+### Bots
 
 - **/bots**                         List the available bots
 - **/bot /b**                       Show the current bot to whom input goes
 - **/bot 'name'**                   Start talking to a particular bot
 
-#### Conversation
+### Conversation
 
 - **/undo**                         Delete the last two items in the conversation
 - **/retry**                        Get a new response to the last input
@@ -45,7 +45,7 @@ The usual readline shortcuts should be available.
 - **/youtube 'youtube-id'**         Summarize a Youtube video
 - **/url 'https://example.com'**    Summarize example.com
 
-#### Knowledge management
+### Knowledge management
 
 - **/ingest 'filename(s)'**         Ingest a filename, list of filenames (separated by spaces, no quotes), or directory (recursively) to the knowledge store  
 - **/ingest 'urls(s)'**             Ingest a webpage at a single url or list of urls (separated by spaces, no quotes)

@@ -60,6 +60,6 @@ it, and passes it to the appropriate action."
           (error "**/quit** to exit"))
         (except [Exception]
           (exception))))
-    (print)
-    (readline.write-history-file history-file)))
+    (readline.write-history-file history-file)
+    (clear)))
     

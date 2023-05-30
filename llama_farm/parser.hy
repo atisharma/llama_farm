@@ -18,17 +18,18 @@ either internally or to a chatbot / langchain.
 (import .interface [banner
                     bot-color
                     clear
+                    clear-status-line
                     console
                     error
                     format-sources
                     get-margin
-                    info
                     info
                     print-chat-history
                     print-message
                     print-sources
                     set-width
                     spinner-context
+                    status-line
                     tabulate
                     toggle-markdown])
 
@@ -224,38 +225,38 @@ either internally or to a chatbot / langchain.
   "Take as input user-message: {role: user, content: line}, the chat history: [list messages], and bot: (system prompt string).
    Do the action resulting from `line`, and return the updated chat history."
   (global bot context current-topic)
+  (clear-status-line)
   (let [chain-type (or (config "repl" "chain-type") "stuff")
         bot-prompt (:system_prompt (params bot) "")
+        bot-name (.capitalize bot)
         time-prompt f"Today's date and time is {(now->text)}."
         system-prompt f"{time-prompt}\n{bot-prompt}\n{context}"
-        chat-history-with-context (inject system-prompt chat-history)
         line (:content user-message)
         margin (get-margin chat-history)
         [_command _ args] (.partition line " ")
         command (.lower _command)]
     (unless (.startswith line "/")
-      (with [c (spinner-context f"{(.capitalize bot)} is summarizing...")]
-        (setv chat-history (truncate bot system-prompt chat-history)))
+      (setv chat-history (truncate bot system-prompt chat-history))
       (.append chat-history user-message))
     (cond
       ;; commands that give a reply
       ;;
       ;; move this to a function, and call with different chain-types, k, search type.
-      (= command "/ask") (.extend chat-history (enquire-db bot user-message args chat-history-with-context
+      (= command "/ask") (.extend chat-history (enquire-db bot user-message args (inject system-prompt chat-history)
                                                            :chain-type chain-type))
-      (= command "/wikipedia") (.extend chat-history (enquire-wikipedia bot user-message args chat-history-with-context
+      (= command "/wikipedia") (.extend chat-history (enquire-wikipedia bot user-message args (inject system-prompt chat-history)
                                                                         :chain-type chain-type))
       (= command "/arxiv") (.extend chat-history (enquire-arxiv
                                                    bot
                                                    user-message
                                                    args
-                                                   chat-history-with-context
+                                                   (inject system-prompt chat-history)
                                                    :chain-type chain-type))
       (= command "/url") (try
                            (.extend chat-history (enquire-summarize-url bot
                                                                         user-message
                                                                         args
-                                                                        chat-history-with-context))
+                                                                        (inject system-prompt chat-history)))
                            (except [e [MissingSchema ConnectionError]]
                              (error f"I can't get anything from [{args}]({args})")))
       (= command "/youtube") (try
@@ -263,7 +264,7 @@ either internally or to a chatbot / langchain.
                                         (enquire-summarize-youtube bot
                                                                    user-message
                                                                    args
-                                                                   chat-history-with-context))
+                                                                   (inject system-prompt chat-history)))
                                (except [TranscriptsDisabled]
                                  (error f"I can't find a transcript for [{args}](https://www.youtube.com/watch/?v={args})")))
       ;;
@@ -281,7 +282,7 @@ either internally or to a chatbot / langchain.
       ;; bot / chat commands
       (= command "/bot") (set-bot args)
       (= command "/bots") (_list-bots)
-      (in command ["/history" "/h"]) (print-chat-history chat-history :tokens (token-count chat-history-with-context))
+      (in command ["/history" "/hist"]) (print-chat-history chat-history :tokens (token-count (inject system-prompt chat-history)))
       ;;
       ;; vectorstore commands
       (= command "/ingest") (_ingest knowledge-store args)
@@ -289,10 +290,8 @@ either internally or to a chatbot / langchain.
       (= command "/recall") (info (recall chat-store bot args))
       (= command "/topic") (if args
                                (setv current-topic args)
-                               (with [c (spinner-context f"{(.capitalize bot)} is summarizing...")]
-                                 (setv current-topic (topic bot chat-history))
-                                 (info current-topic)))
-      (= command "/context") (with [c (spinner-context f"{(.capitalize bot)} is summarizing...")]
+                               (info current-topic))
+      (= command "/context") (with [c (spinner-context f"{bot-name} is summarizing...")]
                                (setv context (recall chat-store bot current-topic))
                                (info context))
       (= command "/system") (info system-prompt)
@@ -300,9 +299,10 @@ either internally or to a chatbot / langchain.
       (.startswith line "/") (error f"Unknown command **{command}**.")
       ;;
       ;; otherwise, normal chat
-      :else (with [c (spinner-context f"{(.capitalize bot)} is thinking...")]
-              (let [reply-msg (reply bot chat-history-with-context)]
+      :else (with [c (spinner-context f"{bot-name} is thinking...")]
+              (let [reply-msg (reply bot (inject system-prompt chat-history))]
                 (.append chat-history reply-msg)
                 (print-message reply-msg margin))))
     ;;
+    (status-line f"[{(bot-color bot)}]{bot-name}[default] | [green]{(token-count (inject system-prompt chat-history))} tkns | {current-topic}")
     chat-history))
