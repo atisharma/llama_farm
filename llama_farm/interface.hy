@@ -84,12 +84,12 @@ Functions that relate to output on the screen.
   "Format and print the chat history to the console."
   (let [margin (get-margin chat-history)]
     (console.rule)
-    (console.print "Chat history:" :style "green italic")
+    (if tokens
+      (console.print f"Chat history (~ {tokens} tokens):" :style "green italic")
+      (console.print "Chat history:" :style "green italic"))
     (console.print)
     (for [msg chat-history]
       (print-message msg margin :left-padding 4))
-    (when tokens
-      (console.print f"History uses ~ {tokens} tokens." :style "green italic"))
     (console.rule)))
 
 (defn info [s [style "green italic"]]

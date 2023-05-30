@@ -43,6 +43,8 @@
   (readline.set_startup_hook (fn [] (readline.insert_text prefill)))
   (try
     (input prompt)
+    (except [EOFError]
+      "/quit")
     (finally
       (readline.set_startup_hook))))
 

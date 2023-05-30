@@ -4,7 +4,7 @@ Functions that produce strings from sources.
 
 (require hyrule.argmove [-> ->>])
 
-(import datetime [datetime])
+(import datetime [datetime timezone])
 
 (import requests)
 (import markdownify [markdownify])
@@ -53,8 +53,11 @@ Functions that produce strings from sources.
   (.strftime (datetime.today) fmt))
 
 (defn now->text []
-  "Current timestamp in isoformat (as text)."
-  (.isoformat (datetime.today)))
+  "Current timestamp in isoformat (as text) with timezone."
+  (-> timezone.utc
+      (datetime.now)
+      (.astimezone)
+      (.isoformat)))
 
 (defn wikipedia-summary->text [topic]
   "Get the Wikipedia summary on a topic (as text)."

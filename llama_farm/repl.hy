@@ -55,7 +55,7 @@ it, and passes it to the appropriate action."
                 line (let [user-msg (user line username)]
                        (setv chat-history
                              (parse user-msg chat-history)))))
-        (except [EOFError KeyboardInterrupt]
+        (except [KeyboardInterrupt]
           (print)
           (error "**/quit** to exit"))
         (except [Exception]

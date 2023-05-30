@@ -1,13 +1,14 @@
 "
 Set up and operate the chat models from the definitions in `config.yaml`.
 
-Can talk to OpenAI or Oobabooga/text-generation-webui's openai-compatible API.
+Can talk to OpenAI or compatible, such as Oobabooga/text-generation-webui's
+openai extension or lm-sys/FastChat.
 "
 
 (require hyrule.argmove [-> ->>])
 (import functools [partial])
 
-(import langchain.llms [LlamaCpp FakeListLLM])  ; TODO: convert these to chat models
+(import langchain.llms [FakeListLLM])  ; TODO: convert this to chat model
 (import langchain.chat-models [ChatOpenAI])
 (import langchain.chat-models.openai [_convert-message-to-dict :as msg->dict
                                       _convert-dict-to-message :as dict->msg])
@@ -44,20 +45,11 @@ Can talk to OpenAI or Oobabooga/text-generation-webui's openai-compatible API.
   "Return the current active model."
   (make-model #** (params bot)))
 
-(defn _replace-role [bot chat-history]
-  "Replace role a with b in all messages for openedai.
-   OpenAI expects 'assistant' role, but OpenedAI (old version) expects 'bot'."
-  (match (:kind (params bot) None)
-         "openedai" (lfor m chat-history {#** m "role" (.replace (:role m) "assistant" "bot")})
-         "openai" (lfor m chat-history {#** m "role" (.replace (:role m) "bot" "assistant")})
-         _ chat-history))
-
 (defn reply [bot chat-history]
   "Return the reply message from the chat model."
   ; we go via langchain's ridiculous Message object.
   ; Construct API instance on the fly because it sets variables at the class level.
   (->> chat-history
-       ;(_replace-role bot)
        (map dict->msg)
        (list)
        ((model bot))

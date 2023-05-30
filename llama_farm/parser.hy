@@ -13,13 +13,14 @@ either internally or to a chatbot / langchain.
 (import llama-farm [ask store])
 (import .models [bots model params reply])
 (import .documents [tokenizer chat->docs])
-(import .utils [config is-url msg system inject user])
+(import .utils [config slurp is-url msg system inject user])
 (import .texts [now->text today->text])
 (import .interface [banner
                     bot-color
                     clear
                     console
                     error
+                    format-sources
                     get-margin
                     info
                     info
@@ -36,8 +37,6 @@ either internally or to a chatbot / langchain.
 
 
 ;; TODO: separate calls for text summary insertion and chat-over-docs for (e.g.) wikipedia, arxiv, yt, file
-;; TODO: measure chat-history length in tokens and drop to chat store old comments as conversation.
-;; TODO: determine current topic over last N messages, and inject that as context to search chat store.
 ;; TODO: status-line: history (tokens) | model | current-topic | current tool
 
 ;; TODO: remove global state for current topic and context.
@@ -51,52 +50,8 @@ either internally or to a chatbot / langchain.
 (setv chat-store (store.faiss (os.path.join (config "storage" "path")
                                             "chat.faiss")))
 
-(setv help-str "
-To chat, just enter some text.
-
-Lines beginning with **/** are parsed as commands.  
-The usual readline shortcuts should be available.
-
-#### Commands
-
-- **/help /h**                      Show this helpful text
-- **/quit /q /exit**                Quit
-- **/version**                      Show the version of this client
-- **/clear**                        Clear the display
-- **/markdown**                     Toggle markdown rendering of messages
-
-#### Bots
-
-- **/bots /personalities**          List the available bots
-- **/bot /personality /p**          Show the current bot to whom input goes
-- **/bot 'name'**                   Start talking to a particular bot
-
-#### Conversation
-
-- **/undo**                         Delete the last two items in the conversation
-- **/retry**                        Get a new response to the last input
-- **/history**                      Print the whole chat history for this session
-- **/reset!**                       Discard the whole chat history from this session
-
-### Query
-
-- **/ask 'query'**                  Ask a question over the knowledge store
-- **/wikipedia 'query'**            Ask a question with reference to wikipedia
-- **/arxiv 'query'**                Ask a question with access to arXiv
-
-### Summarize
-
-- **/youtube 'youtube-id'**         Summarize a Youtube video
-- **/url 'https://example.com'**    Summarize example.com
-
-#### Knowledge management
-
-- **/recall**                       Make a query against the bot's long-term memory
-- **/context**                      Reset and show the current context (in case the topic changed quickly)
-- **/topic**                        Show the current topic
-- **/ingest 'filename(s)'**         Ingest a filename, list of filenames (separated by spaces, no quotes), or directory (recursively) to the knowledge store  
-- **/ingest 'urls(s)'**             Ingest a webpage at a single url or list of urls (separated by spaces, no quotes)
-")
+;; FIXME: this path won't survive a pip install
+(setv help-str (or (slurp "llama_farm/help.md") (error "Help file not found")))
 
 ;;; -----------------------------------------------------------------------------
 ;;; functions for internal use
@@ -145,24 +100,22 @@ The usual readline shortcuts should be available.
 ;;; -----------------------------------------------------------------------------
 
 (defn token-count [x]
-  "The number of tokens, roughly, of a chat history."
+  "The number of tokens, roughly, of a chat history (or anything with a meaningful __repr__)."
   (->> x
        (str)
        (tokenizer.encode)
        (len)))
 
-(defn truncate [bot chat-history]
+(defn truncate [bot system-prompt chat-history]
   "Shorten the chat history if it gets too long.
    Split it in two and store the first part in the chat store.
    Set a new context.
    Return the new chat history."
   (global context current-topic)
-  (unless context
-    (recall chat-store bot (today->text)))
-  (let [context-length (:context-length (params bot) 1250)
-        token-length (token-count chat-history)
+  (let [truncation-length (:truncation-length (params bot) 1000)
+        token-length (token-count (inject system-prompt chat-history))
         chat-length (len chat-history)]
-    (if (and (> token-length context-length)
+    (if (and (> token-length truncation-length)
              (> (len chat-history) 12))
       (let [pre (cut chat-history 8)
             post (cut chat-history 8 None)]
@@ -180,7 +133,7 @@ The usual readline shortcuts should be available.
 
 (defn recall [db bot topic]
   "Summarise a topic from a memory store (usually the chat).
-   Return for injection as a system message."
+   Return as text which may then be used for injection in the system message."
   (let [username (or (config "repl" "user") "user")
         query f"{topic}\n{bot}: {username}:"
         k (or (config "storage" "sources") 6)
@@ -275,32 +228,34 @@ The usual readline shortcuts should be available.
         bot-prompt (:system_prompt (params bot) "")
         time-prompt f"Today's date and time is {(now->text)}."
         system-prompt f"{time-prompt}\n{bot-prompt}\n{context}"
+        chat-history-with-context (inject system-prompt chat-history)
         line (:content user-message)
         margin (get-margin chat-history)
         [_command _ args] (.partition line " ")
         command (.lower _command)]
     (unless (.startswith line "/")
-      (setv chat-history (truncate bot chat-history))
+      (with [c (spinner-context f"{(.capitalize bot)} is summarizing...")]
+        (setv chat-history (truncate bot system-prompt chat-history)))
       (.append chat-history user-message))
     (cond
       ;; commands that give a reply
       ;;
       ;; move this to a function, and call with different chain-types, k, search type.
-      (= command "/ask") (.extend chat-history (enquire-db bot user-message args (inject system-prompt chat-history)
+      (= command "/ask") (.extend chat-history (enquire-db bot user-message args chat-history-with-context
                                                            :chain-type chain-type))
-      (= command "/wikipedia") (.extend chat-history (enquire-wikipedia bot user-message args (inject system-prompt chat-history)
+      (= command "/wikipedia") (.extend chat-history (enquire-wikipedia bot user-message args chat-history-with-context
                                                                         :chain-type chain-type))
       (= command "/arxiv") (.extend chat-history (enquire-arxiv
                                                    bot
                                                    user-message
                                                    args
-                                                   (inject system-prompt chat-history)
+                                                   chat-history-with-context
                                                    :chain-type chain-type))
       (= command "/url") (try
                            (.extend chat-history (enquire-summarize-url bot
                                                                         user-message
                                                                         args
-                                                                        (inject system-prompt chat-history)))
+                                                                        chat-history-with-context))
                            (except [e [MissingSchema ConnectionError]]
                              (error f"I can't get anything from [{args}]({args})")))
       (= command "/youtube") (try
@@ -308,7 +263,7 @@ The usual readline shortcuts should be available.
                                         (enquire-summarize-youtube bot
                                                                    user-message
                                                                    args
-                                                                   (inject system-prompt chat-history)))
+                                                                   chat-history-with-context))
                                (except [TranscriptsDisabled]
                                  (error f"I can't find a transcript for [{args}](https://www.youtube.com/watch/?v={args})")))
       ;;
@@ -320,32 +275,34 @@ The usual readline shortcuts should be available.
       (= command "/reset!") (do (info "Conversation discarded.")
                                 (setv chat-history []))
       (= command "/undo") (setv chat-history (cut chat-history 0 -2))
-      (= command "/help") (info help-str)
-      (= command "/h") (info help-str)
+      (in command ["/h" "/help"]) (info help-str)
       (= command "/version") (info (version "llama_farm"))
       ;;
       ;; bot / chat commands
       (= command "/bot") (set-bot args)
       (= command "/bots") (_list-bots)
-      (= command "/personalities") (_list-bots)
-      (= command "/history") (print-chat-history chat-history :tokens (token-count chat-history))
+      (in command ["/history" "/h"]) (print-chat-history chat-history :tokens (token-count chat-history-with-context))
       ;;
       ;; vectorstore commands
       (= command "/ingest") (_ingest knowledge-store args)
+      (= command "/sources") (info (format-sources (store.mmr knowledge-store args)))
       (= command "/recall") (info (recall chat-store bot args))
-      (= command "/topic") (do
-                             (setv current-topic (topic bot chat-history))
-                             (info current-topic))
-      (= command "/context") (do
+      (= command "/topic") (if args
+                               (setv current-topic args)
+                               (with [c (spinner-context f"{(.capitalize bot)} is summarizing...")]
+                                 (setv current-topic (topic bot chat-history))
+                                 (info current-topic)))
+      (= command "/context") (with [c (spinner-context f"{(.capitalize bot)} is summarizing...")]
                                (setv context (recall chat-store bot current-topic))
                                (info context))
+      (= command "/system") (info system-prompt)
       ;;
       (.startswith line "/") (error f"Unknown command **{command}**.")
       ;;
       ;; otherwise, normal chat
-      :else (do (with [c (spinner-context f"{(.capitalize bot)} is thinking...")]
-                  (let [reply-msg (reply bot (inject system-prompt chat-history))]
-                    (.append chat-history reply-msg)
-                    (print-message reply-msg margin)))))
+      :else (with [c (spinner-context f"{(.capitalize bot)} is thinking...")]
+              (let [reply-msg (reply bot chat-history-with-context)]
+                (.append chat-history reply-msg)
+                (print-message reply-msg margin))))
     ;;
     chat-history))
