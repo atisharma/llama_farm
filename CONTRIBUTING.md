@@ -8,12 +8,12 @@ TBD
 
 ### Documentation
 
-At the moment, the code is the only documentation.
+At the moment, the readme file, the code and the help file is the only documentation.
 
 ### Pull requests
 
 The codebase is new so is in a state of flux. It needs some reorganisation.
-The code is in [Hy 0.26.0](https://docs.hylang.org).
+The code is in [Hy 0.26.0](https://docs.hylang.org). Python contributions will be considered if they are orthogonal to the rest of the code.
 
 Please try to keep consistent with the style - more like clojure and less like java.
 Short and simple functions are preferred. The code should fit inside your head.

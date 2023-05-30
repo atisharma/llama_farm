@@ -5,14 +5,16 @@ Chat with multiple bots with different personalities, hosted locally or with Ope
 Llama-farm has a long-term chat memory that recalls previous conversations. A summary of previous conversation relevant to the topic (automatically determined) is available to the bot.
 
 ### Knowledge database
-Ask it questions about your own documents and information, stuff on arXiv, youtube or wikipedia.
-I recommend you are selective about what you ingest as the quality of information available is more important than the quantity.
+Ask it questions about your own documents and information, stored in a local vector knowledge store.
+I recommend you are selective about what you ingest in order to improve the relevance of results. The quality of information available is more important than the quantity.
 
-### Internet access
+### Internet access; summarization
+You can ask it questions with access to arXiv or wikipedia.
+It can summarize Youtube video transcripts and URLs.
 
 ### Compatibility and technology
 Llama-farm speaks to any OpenAI-compatible API:
-- oobabooga/text-generation-webui (via its OpenedAI API extension)
+- oobabooga/text-generation-webui (via its OpenAI-compatible API extension)
 - lm-sys/FastChat
 - OpenAI
 
