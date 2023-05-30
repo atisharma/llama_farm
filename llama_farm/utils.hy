@@ -82,7 +82,7 @@
 (defn msg [role content bot]
   "To conform with langchain's ridiculous BaseMessage schema."
   {"role" role
-   "bot" bot
+   "bot" (.lower bot)
    "content" content})
 
 (defn system [content]

@@ -135,8 +135,8 @@ either internally or to a chatbot / langchain.
 (defn recall [db bot topic]
   "Summarise a topic from a memory store (usually the chat).
    Return as text which may then be used for injection in the system message."
-  (let [username (or (config "repl" "user") "user")
-        query f"{topic}\n{bot}: {username}:"
+  (let [username (or (.lower (config "repl" "user")) "user")
+        query f"{topic}\n{bot}:\n{username}:"
         k (or (config "storage" "sources") 6)
         docs (store.similarity db query :k k)
         chat-str (.join "\n" (lfor d docs f"{(:time d.metadata)}\n{d.page-content}"))]
@@ -230,7 +230,7 @@ either internally or to a chatbot / langchain.
         bot-prompt (:system_prompt (params bot) "")
         bot-name (.capitalize bot)
         time-prompt f"Today's date and time is {(now->text)}."
-        system-prompt f"{time-prompt}\n{bot-prompt}\n{context}"
+        system-prompt f"{time-prompt}\n{bot-prompt}\nThe user's name is {(:bot user-message)}.\n{context}"
         line (:content user-message)
         margin (get-margin chat-history)
         [_command _ args] (.partition line " ")
@@ -290,7 +290,9 @@ either internally or to a chatbot / langchain.
       (= command "/recall") (info (recall chat-store bot args))
       (= command "/topic") (if args
                                (setv current-topic args)
-                               (info current-topic))
+                               (with [c (spinner-context f"{bot-name} is summarizing...")]
+                                 (setv current-topic (topic bot chat-history))
+                                 (info current-topic)))
       (= command "/context") (with [c (spinner-context f"{bot-name} is summarizing...")]
                                (setv context (recall chat-store bot current-topic))
                                (info context))
