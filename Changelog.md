@@ -8,6 +8,9 @@ All notable changes to this project will be documented in this file.
 
 - Add a changelog
 - Handle save-on-quit of chat history
+- Sort out conversation saving, context injection.
+- Remove workaround for https://github.com/oobabooga/text-generation-webui/issues/2326
+- Improve readme, tidy code, improve defaults
 
 ### Documentation
 
