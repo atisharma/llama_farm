@@ -1,4 +1,6 @@
 "
+*** THIS FILE IS AN ONGOING EXPERIMENT AND IS NOT CURRENTLY USED ***
+
 LLM agent classes. (farm approach)
 
 An agent performs tasks on behalf of another entity.

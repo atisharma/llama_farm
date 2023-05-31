@@ -1,4 +1,6 @@
 "
+*** THIS FILE IS AN ONGOING EXPERIMENT AND IS NOT CURRENTLY USED ***
+
 Produce summary text from a longer text.
 
 This is an experiment to get round langchain's assumption of OpenAI's long context length.

@@ -13,20 +13,23 @@ Functions that produce strings from sources.
 
 (import youtube_transcript_api [YouTubeTranscriptApi])
 (import youtube_transcript_api.formatters [TextFormatter])
-(import deepmultilingualpunctuation [PunctuationModel])
 
 
 (defn youtube->text [youtube-id [punctuate False]]
   "Load and punctuate youtube transcript as text.
    Youtube 'transcripts' are just a long list of words with no punctuation
-   or identification of the speaker, so we apply a punctuation filter.
+   or identification of the speaker.
+   So we can a punctuation filter, but this takes VRAM and requires pytorch.
    !!! WARNING !!!
-   This takes a fair amount of VRAM."
+   This takes a fair amount (1-2G) of VRAM."
   (let [transcript (.get-transcript YouTubeTranscriptApi youtube-id)
         formatter (TextFormatter)
         text (.format_transcript formatter transcript)]
     (if punctuate
-        (.restore-punctuation (PunctuationModel) text)
+        (do
+          ; import here because not everyone will want to spend the VRAM.
+          (import deepmultilingualpunctuation [PunctuationModel])
+          (.restore-punctuation (PunctuationModel) text))
         text)))
 
 (defn url->text [url]

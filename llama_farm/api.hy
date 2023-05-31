@@ -1,9 +1,14 @@
-"OpenAI/OpenedAI compatible API client library.
+"
+*** THIS FILE IS AN ONGOING EXPERIMENT AND IS NOT CURRENTLY USED ***
+
+OpenAI/OpenedAI compatible API client library.
 
 This module provides general API put/post/get/delete functions and also OpenAI compatible endpoints.
 "
 
 ;;; TODO: adapt to talk to OpenAI
+;;; TODO: chat endpoint
+;;; TODO: streaming
 
 
 (require hyrule.argmove [-> ->>])

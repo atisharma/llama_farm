@@ -49,8 +49,7 @@ optional k value to specify the number of results.
 ;;; -----------------------------------------------------------------------------
 
 (defn chroma [db-name]
-  "Persistent Chroma vectorstore instance.
-   Chroma langchain integration has a bug that prevents reliable loading."
+  "Persistent Chroma vectorstore instance."
   (import chromadb.config [Settings :as chroma-settings])
   (import chromadb.errors [DuplicateIDError IDAlreadyExistsError])
   (let [settings (chroma-settings :anonymized-telemetry False
@@ -66,9 +65,7 @@ optional k value to specify the number of results.
 
 (defn faiss [db-path]
   "Persistent FAISS vectorstore instance.
-   Faiss is more powerful search than Chroma, but is more complicated.
-   I don't know how to delete dupes in Faiss because langchain uses
-   random ID for insertion."
+   Faiss is more powerful search than Chroma, but is more complicated."
   ;; for special operations on an underlying faiss store, see
   ;; https://github.com/facebookresearch/faiss/wiki/Special-operations-on-indexes
   (import faiss [IndexFlatL2])
@@ -107,7 +104,6 @@ optional k value to specify the number of results.
                            new-ids (list (.difference (set uids) existing-ids))
                            new-docs (lfor i new-ids (get docs-map i))]
                        (with [c (spinner-context f"Adding {(len new-ids)} new documents, ignoring {(- (len uids) (len new-ids))} duplicates.")]
-                         ;(info f"Adding {(len new-ids)} new documents, ignoring {(- (len uids) (len new-ids))} duplicates.")
                          (when (len new-ids)
                              (db.add_documents new-docs :ids new-ids)
                              (logging.info f"Saving vector store to {db.path}/.")
