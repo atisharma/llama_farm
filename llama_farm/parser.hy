@@ -52,8 +52,8 @@ either internally or to a chatbot / langchain.
 (setv chat-store (store.faiss (os.path.join (config "storage" "path")
                                             "chat.faiss")))
 
-;; FIXME: this path won't survive a pip install
-(setv help-str (slurp (+ (os.path.dirname __file__) "llama_farm/help.md")))
+(setv help-str (slurp (or (+ (os.path.dirname __file__) "/help.md")
+                          "llama_farm/help.md")))
 
 ;;; -----------------------------------------------------------------------------
 ;;; functions for internal use
