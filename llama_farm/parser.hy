@@ -45,6 +45,7 @@ either internally or to a chatbot / langchain.
       current-topic "No topic is set yet."
       context "")
 
+;; TODO: test with Chroma, present an option in the config
 (setv knowledge-store (store.faiss (os.path.join (config "storage" "path")
                                                  "knowledge.faiss")))
 
@@ -291,7 +292,7 @@ either internally or to a chatbot / langchain.
       (= command "/version") (info (version "llama_farm"))
       ;;
       ;; bot / chat commands
-      (= command "/bot") (set-bot args)
+      (= command "/bot") (do (set-bot args) (setv bot-name (.capitalize bot)))
       (= command "/bots") (_list-bots)
       (in command ["/history" "/hist"]) (print-chat-history chat-history
                                                             :tokens (token-count (inject system-prompt chat-history)))
