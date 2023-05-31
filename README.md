@@ -38,7 +38,23 @@ The help text is [here](llama_farm/help.md).
 ### Setup
 Copy the `config.toml.example` to `config.toml`.
 To use openAI, you need to set your key in `config.toml`.
-Install the `requirements.txt`.
+
+There are a lot of dependencies so it's recommended you install everything in a virtual environment.
+Either clone the repo, install the `requirements.txt` and run the module
+```
+$ <activate your venv>
+$ git clone https://github.com/atisharma/llama_farm
+$ cd llama_farm
+$ pip install -r requirements.txt
+$ python -m llama_farm
+```
+
+Or, install using pip
+```
+$ <activate your venv>
+$ pip install git+https://github.com/atisharma/llama_farm
+$ llama-farm
+```
 
 ### Suitable models
 Llama-farm works very well with OpenAI's gpt-3.5-turbo.
@@ -47,7 +63,6 @@ surprisingly well with WizardLM-7B!
 But see limitations below.
 
 ### Limitations and bugs
-
 The context length limitation of Llama models (2048 tokens) is half or
 less that of OpenAI's models. Langchain assumes the longer context, so
 some commands involving these chains (wikipedia, arxiv, summarization)
