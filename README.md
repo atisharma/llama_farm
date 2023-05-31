@@ -3,6 +3,8 @@ Chat with multiple bots with different personalities, hosted locally
 or with OpenAI, in the comfort of a beautiful 1970's terminal-themed
 REPL.
 
+![A llama with a cuttlefish logo standing in front of the letters LF](logo.png)
+
 ### Topical chat memory
 Llama-farm has a **long-term chat memory** that recalls previous
 conversations. A summary of previous conversation relevant to the
@@ -27,7 +29,11 @@ Llama-farm speaks to any OpenAI-compatible API:
 
 Llama-farm uses hwchase17/langchain for some abstractions (see limitations).
 
-The storage is backed by [faiss](https://github.com/facebookresearch/faiss) or [chromadb](https://github.com/chroma-core/chroma).
+The storage is backed by [faiss](https://github.com/facebookresearch/faiss). The wrapper to [chromadb](https://github.com/chroma-core/chroma) is
+written but not currently used.
+
+#### Help text
+The help text is [here](llama_farm/help.md).
 
 ### Setup
 Copy the `config.toml.example` to `config.toml`.
@@ -35,12 +41,10 @@ To use openAI, you need to set your key in `config.toml`.
 Install the `requirements.txt`.
 
 ### Suitable models
-Llama-farm works very well with OpenAI's gpt-3.5-turbo of course.
+Llama-farm works very well with OpenAI's gpt-3.5-turbo.
 Wizard-Vicuna-Uncensored also works very well. It even works
 surprisingly well with WizardLM-7B!
-
-#### Help text
-The help text is [here](llama_farm/help.md).
+But see limitations below.
 
 ### Limitations and bugs
 
