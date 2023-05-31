@@ -1,0 +1,5 @@
+deepmultilingualpunctuation
+accelerate
+torch
+torchvision
+torchaudio
