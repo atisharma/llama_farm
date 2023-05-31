@@ -1,6 +1,7 @@
 (require hyrule.argmove [-> ->>])
 (require hyrule.control [unless])
 
+(import os)
 (import json)
 (import re)
 (import readline)
@@ -30,6 +31,8 @@
 
 (defn config [#* keys]
   ; get values in a toml file like a hashmap, but default to None.
+  (unless (os.path.isfile config-file)
+    (raise (FileNotFoundError config-file)))
   (try
     (-> config-file
       (slurp)

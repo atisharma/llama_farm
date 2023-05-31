@@ -53,7 +53,7 @@ either internally or to a chatbot / langchain.
                                             "chat.faiss")))
 
 ;; FIXME: this path won't survive a pip install
-(setv help-str (or (slurp "llama_farm/help.md") (error "Help file not found")))
+(setv help-str (slurp (+ (os.path.dirname __file__) "llama_farm/help.md")))
 
 ;;; -----------------------------------------------------------------------------
 ;;; functions for internal use
@@ -170,7 +170,7 @@ either internally or to a chatbot / langchain.
       (print-sources (:source-documents reply))
       (let [reply-msg (msg "assistant" f"{(:answer reply)}" bot)]
         (print-message reply-msg margin)
-        [{#** user-message "content" f"[Database query] {args}"} reply-msg]))))
+        [{#** user-message "content" f"[Knowledge query] {args}"} reply-msg]))))
 
 (defn enquire-wikipedia [bot user-message args chat-history * chain-type]
   (with [c (spinner-context f"{(.capitalize bot)} is thinking...")]
