@@ -114,13 +114,12 @@ either internally or to a chatbot / langchain.
    Set a new context.
    Return the new chat history."
   (global context current-topic)
-  (let [truncation-length (:truncation-length (params bot) 1000)
+  (let [truncation-length (:truncation-length (params bot) 1500)
         token-length (token-count (inject system-prompt chat-history))
-        chat-length (len chat-history)]
-    (if (and (> token-length truncation-length)
-             (> (len chat-history) 12))
-      (let [pre (cut chat-history 8)
-            post (cut chat-history 8 None)]
+        cut-length (// (len chat-history) 2)]
+    (if (> token-length truncation-length)
+      (let [pre (cut chat-history cut-length)
+            post (cut chat-history cut-length None)]
         (commit-chat bot pre)
         (setv current-topic (topic bot pre))
         (setv context (recall chat-store bot current-topic))
@@ -135,13 +134,14 @@ either internally or to a chatbot / langchain.
 
 (defn recall [db bot topic]
   "Summarise a topic from a memory store (usually the chat).
-   Return as text which may then be used for injection in the system message."
-  (let [username (or (.lower (config "user")) "user")
-        query f"{topic}\n{bot}:\n{username}:"
-        k (or (config "storage" "sources") 6)
-        docs (store.similarity db query :k k)
-        chat-str (.join "\n" (lfor d docs f"{(:time d.metadata)}\n{d.page-content}"))]
-    (ask.summarize (model bot) chat-str))) 
+   Return a summary text which may then be used for injection in the system message."
+  (with [c (spinner-context f"{(.capitalize bot)} is summarizing...")]
+    (let [username (or (.lower (config "user")) "user")
+          query f"{topic}\n{bot}:\n{username}:"
+          k (or (config "storage" "sources") 6)
+          docs (store.similarity db query :k k)
+          chat-str (.join "\n" (lfor d docs f"{(:time d.metadata)}\n{d.page-content}"))]
+      (ask.summarize (model bot) chat-str)))) 
 
 (defn topic [bot chat-history]
   "Determine the current topic of conversation from the chat history."
@@ -231,7 +231,7 @@ either internally or to a chatbot / langchain.
         bot-prompt (:system_prompt (params bot) "")
         bot-name (.capitalize bot)
         time-prompt f"Today's date and time is {(now->text)}."
-        system-prompt f"{time-prompt}\n{bot-prompt}\nThe user's name is {(:bot user-message)}.\n{context}"
+        system-prompt f"{time-prompt}\n{bot-prompt}\nYou are talking to the user called {(.capitalize (:bot user-message))}.\n{context}"
         line (:content user-message)
         margin (get-margin chat-history)
         [_command _ args] (.partition line " ")
@@ -306,9 +306,8 @@ either internally or to a chatbot / langchain.
                                (with [c (spinner-context f"{bot-name} is summarizing...")]
                                  (setv current-topic (topic bot chat-history))
                                  (info current-topic)))
-      (= command "/context") (with [c (spinner-context f"{bot-name} is summarizing...")]
-                               (setv context (recall chat-store bot current-topic))
-                               (info context))
+      (= command "/context") (do (setv context (recall chat-store bot current-topic))
+                                 (info context))
       (= command "/system") (info system-prompt)
       ;;
       (.startswith line "/") (error f"Unknown command **{command}**.")

@@ -52,11 +52,13 @@
       (readline.set_startup_hook))))
 
 (defn load [fname]
-  "Read a json file."
-  (with [f (open fname
-                 :mode "r"
-                 :encoding "UTF-8")]
-    (json.load f)))
+  "Read a json file. None if it doesn't exist."
+  (let [path (Path fname)]
+    (when (path.exists)
+      (with [f (open fname
+                     :mode "r"
+                     :encoding "UTF-8")]
+        (json.load f)))))
 
 (defn save [obj fname]
   "Write an object as a json file."

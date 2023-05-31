@@ -38,7 +38,7 @@ optional k value to specify the number of results.
 (import langchain.docstore.in_memory [InMemoryDocstore])
 
 (import .utils [config hash-id])
-(import .documents [load url->docs])
+(import .documents [->docs url->docs])
 (import .interface [console spinner-context])
 
 
@@ -111,7 +111,7 @@ optional k value to specify the number of results.
 
 (defn ingest-files [db fname]
   "Load files or directories and ingest them."
-  (ingest-docs db (load fname))) 
+  (ingest-docs db (->docs fname))) 
 
 (defn ingest-urls [db urls] 
   "Load url(s) and ingest them."

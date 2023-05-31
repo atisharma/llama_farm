@@ -14,7 +14,7 @@ The main REPL where we chat to the bot and issue commands.
 (import signal [signal SIGINT])
 (import readline)
 
-(import .utils [config rlinput user])
+(import .utils [config rlinput user load save])
 (import .parser [parse set-bot commit-chat bot])
 (import .interface [banner
                     clear
@@ -37,7 +37,7 @@ it, and passes it to the appropriate action."
   (info "Enter **/help** for help\n")
   (console.rule)
   (set-bot)
-  (let [chat-history []
+  (let [chat-history (or (load "chat_history.json") [])
         history-file (os.path.join (os.path.expanduser "~") ".llama_history")]
     (try
       (readline.read-history-file history-file)
@@ -48,7 +48,9 @@ it, and passes it to the appropriate action."
               margin (get-margin chat-history)
               user-prompt (format-msg (user "" username) margin)
               line (.strip (rlinput user-prompt))]
-          (cond (.startswith line "/quit!") (break)
+          (cond (.startswith line "/quit!") (do
+                                              (setv chat-history [])
+                                              (break))
                 (or (.startswith line "/q")
                     (.startswith line "/exit")) (do (commit-chat bot chat-history)
                                                     (break))
@@ -60,5 +62,6 @@ it, and passes it to the appropriate action."
         (except [Exception]
           (exception))))
     (readline.write-history-file history-file)
+    (save chat-history "chat_history.json")
     (clear)))
     

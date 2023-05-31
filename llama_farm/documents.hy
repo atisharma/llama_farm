@@ -163,7 +163,7 @@ Functions that produce lists of Document objects.
 
 ; TODO: think about return values; maybe track lists of ignored files?
 
-(defn load [fname]
+(defn ->docs [fname]
   "Just give me an iterable of document chunks!"
   (logging.info "Listing documents.")
   (cond (os.path.isdir fname) (dir->docs fname)

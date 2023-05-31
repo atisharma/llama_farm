@@ -14,14 +14,18 @@ Functions that produce strings from sources.
 (import youtube_transcript_api [YouTubeTranscriptApi])
 (import youtube_transcript_api.formatters [TextFormatter])
 
+(import langchain.utilities [ArxivAPIWrapper WikipediaAPIWrapper])
+(import langchain.utilities.duckduckgo_search [DuckDuckGoSearchAPIWrapper])
+
 
 (defn youtube->text [youtube-id [punctuate False]]
-  "Load and punctuate youtube transcript as text.
-   Youtube 'transcripts' are just a long list of words with no punctuation
-   or identification of the speaker.
-   So we can a punctuation filter, but this takes VRAM and requires pytorch.
+  "Load (and optionally punctuate) youtube transcript as text.
+   Youtube 'transcripts' are normally just a long list of words with no
+   punctuation or identification of the speaker.
+   We can apply punctuation filter, but this takes VRAM and requires pytorch.
    !!! WARNING !!!
-   This takes a fair amount (1-2G) of VRAM."
+   This takes a fair amount (1-2G) of VRAM.
+   !!! WARNING !!!"
   (let [transcript (.get-transcript YouTubeTranscriptApi youtube-id)
         formatter (TextFormatter)
         text (.format_transcript formatter transcript)]
@@ -46,14 +50,14 @@ Functions that produce strings from sources.
 
 (defn ddg->text [topic]
   "Get the DuckDuckGo summary on a topic (as text)."
-  (.run (DuckDuckGoSearchRun) topic))
+  (.run (DuckDuckGoSearchAPIWrapper) topic))
 
 (defn arxiv->text [topic]
-  "Get the arxiv summary on a topic (as text)."
+  "Get relevant arxiv summaries on a topic (as text)."
   (.run (ArxivAPIWrapper) topic))
 
-(defn wikipedia-summary->text [topic]
-  "Get the Wikipedia summary on a topic (as text)."
+(defn wikipedia->text [topic]
+  "Get relevant Wikipedia summaries on a topic (as text)."
   (.run (WikipediaAPIWrapper) topic))
 
 (defn today->text [[fmt "%Y-%m-%d"]]
