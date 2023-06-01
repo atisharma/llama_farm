@@ -25,7 +25,7 @@ The usual readline shortcuts should be available.
 - **/history**                   Print the whole chat history for this session
 - **/reset!**                    Discard the whole current chat history
 
-### Query
+### Chat-context query
 
 - **/wikipedia 'query'**         Ask a question with reference to wikipedia
 - **/arxiv 'query'**             Ask a question with access to arXiv

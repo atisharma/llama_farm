@@ -67,6 +67,23 @@
                  :encoding "UTF-8")]
     (json.dump obj f :indent 4)))
 
+(defn file-append [record fname]
+ "Append / write a dict to a file as json.
+ If the file does not exist, initialise a file with the record.
+ If the file exists, append to it.
+ Cobbled together from https://stackoverflow.com/a/31224105
+ it overwrites the closing ']' with the new record + a new ']'.
+ POSIX expects a trailing newline."
+  (when fname
+    (if (os.path.isfile fname)
+      (with [f (open fname :mode "r+" :encoding "UTF-8")]
+        (.seek f 0 os.SEEK_END)
+        (.seek f (- (.tell f) 2))
+        (.write f (.format ",\n{}]\n" (json.dumps record :indent 4))))
+      (with [f (open fname :mode "w" :encoding "UTF-8")]
+        (.write f (.format "[\n{}]\n" (json.dumps record :indent 4)))))))
+
+
 (defn slurp [fname]
   "Read a text file."
   (let [path (Path fname)]

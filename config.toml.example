@@ -1,6 +1,7 @@
 user = "user"
 chain-type = "map_reduce"   # map_rerank stuff
 logfile = "llama-farm.log"
+chatlog = "chat_history.json"
 
 [storage]
 # if you change the embedding your previous data will be unreadable
@@ -17,6 +18,8 @@ sources = 6
 # Wizard-Vicuna-Uncensored 13B works well for the local models.
 # truncation_length is used to compress the history into a prompt context.
 # It's useful to reduce the number of tokens sent to OpenAI (cost) or tgwui (OOM).
+
+default = "olivia"
 
 [bots.olivia]                       # oracle
 system_prompt = "You are Olivia. Olivia always gives factual and accurate replies. Olivia thinks step by step, showing her working on the way. Olivia is curious about the world and likes to ask questions."

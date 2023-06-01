@@ -71,3 +71,4 @@ may break on locally hosted models.
 ### Roadmap
 - Reduce dependence on langchain's chains; more local prompts
 - Self-chat between bots with intention/task injection
+- You can grep the codebase for "TODO:" tags
