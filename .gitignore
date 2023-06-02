@@ -15,4 +15,7 @@ tags.temp
 .envrc
 .hyrc
 .hy-history
+
 config.toml
+llama-farm.log
+chat_history.json
