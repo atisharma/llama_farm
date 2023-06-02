@@ -94,7 +94,7 @@ Functions that relate to output on the screen.
       (console.print "Chat history:" :style "green italic"))
     (console.print)
     (for [msg chat-history]
-      (print-message msg margin :left-padding 4))
+      (print-message msg margin :padding #(0 4 1 0)))
     (console.rule)))
 
 (defn print-markdown [s [style None] [padding #(0 3 0 0)]]
@@ -146,11 +146,11 @@ Functions that relate to output on the screen.
   "Formats and prints the current exception."
   (console.print-exception))
 
-(defn print-message [msg margin [left-padding 0]]
+(defn print-message [msg margin [padding #(0 1 0 0)]]
   "Format and print a message to the screen."
   (let [bot (.capitalize (:bot msg))
         color (bot-color bot)
-        output (Table :padding [0 1 0 left-padding]
+        output (Table :padding padding
                       :expand True
                       :show-header False
                       :show-lines False

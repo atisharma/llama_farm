@@ -25,27 +25,27 @@ The usual readline shortcuts should be available.
 - **/history**                   Print the whole chat history for this session
 - **/reset!**                    Discard the whole current chat history
 
-### Chat-context query
-
-- **/wikipedia 'query'**         Ask the bot a question with reference to wikipedia
-- **/arxiv 'query'**             Ask the bot a question with access to arXiv
-- **/ask 'query'**               Ask the bot a question over the knowledge store
-
 ### Memory
 
-- **/context**                   Reset and show the current context (in case the topic changed quickly)
-- **/topic**                     Show the current topic
-- **/topic 'new topic'**         Manually set the current topic
+- **/topic 'new topic'**         Manually set a topic
+- **/topic**                     Set a topic from the discussion
+- **/context**                   Set and show the current context 
 
-- **/sources 'query'**           Directly search the vectorstore for relevant sources (MMR search)
-- **/similarity 'query'**        Directly search the vectorstore for relevant information (similarity search)
+- **/sources 'query'**           Directly search the knowledge store for relevant sources (MMR search)
+- **/similarity 'query'**        Directly search the knowledge store for relevant information (similarity search)
 - **/recall 'query'**            Make a query against the bot's long-term chat memory (summary)
 - **/know 'query'**              Make a query against the bot's knowledge store (summary)
 
+### Chat-aware query
+
+- **/ask 'query'**               Ask the bot a question over the knowledge store
+- **/wikipedia 'query'**         Ask the bot a question with reference to wikipedia
+- **/arxiv 'query'**             Ask the bot a question with access to arXiv
+
 ### Summarize external sources
 
-- **/youtube 'youtube-id'**      Summarize a Youtube video
-- **/url 'https://example.com'** Summarize example.com
+- **/summ-youtube 'youtube-id'**      Summarize a Youtube video
+- **/summ-url 'https://example.com'** Summarize example.com
 
 ### Knowledge management
 

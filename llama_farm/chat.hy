@@ -26,7 +26,7 @@ Functions that return messages or are associated with chat management.
        (tokenizer.encode)
        (len)))
 
-(defn truncate [bot system-prompt * chat-history current-topic context]
+(defn truncate [bot system-prompt * chat-history current-topic context knowledge]
   "Shorten the chat history if it gets too long, in which case:
    - split it in two and store the first part in the chat store.
    - set a new context.
@@ -41,10 +41,13 @@ Functions that return messages or are associated with chat management.
             post (cut chat-history cut-length None)]
         (commit-chat bot pre)
         {"chat_history" post
+         "current_topic" (topic bot pre)
          "context" (recall chat-store bot current-topic)
-         "current_topic" (topic bot pre)})
+         "knowledge" (recall knowledge-store bot current-topic)
+         "current_topic" current-topic})
       {"chat_history" chat-history
        "context" context
+       "knowledge" knowledge
        "current_topic" current-topic})))
 
 (defn commit-chat [bot chat]
@@ -123,7 +126,12 @@ Functions that return messages or are associated with chat management.
         (print-message reply-msg margin)
         [{#** user-message "content" f"[ArXiv query] {args}"} reply-msg]))))
 
-;; TODO: use file, url and youtube retrievers here when they are finished.
+;; TODO: consider setting up a temp db, ingesting docs, and querying over that
+;; https://python.langchain.com/en/latest/modules/chains/index_examples/chat_vector_db.html
+(defn enquire-docs [bot user-message args chat-history * docs chain-type]
+  "Chat over a set of documents.")
+  
+;; TODO: or, use file, url and youtube retrievers here when they are finished.
 ;; or, work out how to chat over docs directly.
 
 (defn enquire-summarize-url [bot user-message url chat-history]

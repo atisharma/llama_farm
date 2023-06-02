@@ -14,7 +14,7 @@ either internally or to a chatbot / langchain.
 (import .state [chat-store knowledge-store])
 (import .models [bots params reply])
 (import .utils [config slurp is-url msg system user inject file-append])
-(import .texts [now->text today->text])
+(import .texts [now->text url->text arxiv->text youtube->text wikipedia->text])
 (import .interface [banner
                     bot-color
                     clear
@@ -37,15 +37,16 @@ either internally or to a chatbot / langchain.
 (import youtube-transcript-api._errors [TranscriptsDisabled])
 
 
-;; TODO: separate calls for text summary insertion and chat-over-docs for (e.g.) wikipedia, arxiv, yt, file
+;; TODO: separate calls for chat-over-docs for (e.g.) wikipedia, arxiv, yt, file
 ;; TODO: status-line: history (tokens) | model | current-topic | current tool
 
 ;; TODO: remove global state for current topic and context.
 ;; TODO: manage state a bit more cleanly in this module
 
 (setv bot (config "bots" "default")
-      current-topic "No topic is set yet."
-      context "")
+      current-topic ""
+      context ""
+      knowledge "")
 
 ;;; -----------------------------------------------------------------------------
 ;;; functions for internal use
@@ -111,13 +112,13 @@ either internally or to a chatbot / langchain.
 (defn parse [user-message chat-history]
   "Take as input user-message: {role: user, content: line}, the chat history: [list messages], and bot: (system prompt string).
    Do the action resulting from `line`, and return the updated chat history."
-  (global bot context current-topic)
+  (global bot context knowledge current-topic)
   (clear-status-line)
   (let [chain-type (or (config "chain-type") "stuff")
         bot-prompt (:system_prompt (params bot) "")
         bot-name (.capitalize bot)
         time-prompt f"Today's date and time is {(now->text)}."
-        system-prompt f"{time-prompt}\n{bot-prompt}\nYou are talking to the user called {(.capitalize (:bot user-message))}.\n{context}"
+        system-prompt f"{time-prompt}\n{bot-prompt}\nYou are talking to the user called {(.capitalize (:bot user-message))}.\n{context}\n{knowledge}"
         line (:content user-message)
         margin (get-margin chat-history)
         [_command _ args] (.partition line " ")
@@ -126,9 +127,11 @@ either internally or to a chatbot / langchain.
                                     system-prompt
                                     :chat-history chat-history
                                     :current-topic current-topic
-                                    :context context)]
+                                    :context context
+                                    :knowledge knowledge)]
       (setv chat-history (:chat-history _chat-dict)
             context (:context _chat-dict)
+            knowledge (:knowledge _chat-dict)
             current-topic (:current-topic _chat-dict)))
     (cond
       ;;
@@ -154,22 +157,38 @@ either internally or to a chatbot / langchain.
                                              args
                                              (inject system-prompt chat-history)
                                              :chain-type chain-type))
-      (= command "/url") (try
-                           (chat-extend chat-history
-                                        #* (chat.enquire-summarize-url bot
-                                                                  user-message
-                                                                  args
-                                                                  (inject system-prompt chat-history)))
-                           (except [e [MissingSchema ConnectionError]]
-                             (error f"I can't get anything from [{args}]({args})")))
-      (= command "/youtube") (try
-                               (chat-extend chat-history
-                                            #* (chat.enquire-summarize-youtube bot
-                                                                               user-message
-                                                                               args
-                                                                               (inject system-prompt chat-history)))
-                               (except [TranscriptsDisabled]
-                                 (error f"I can't find a transcript for [{args}](https://www.youtube.com/watch/?v={args})")))
+      ;;
+      ;; summarization
+      (= command "/summ-url") (try
+                                (chat-extend chat-history
+                                             #* (chat.enquire-summarize-url bot
+                                                                       user-message
+                                                                       args
+                                                                       (inject system-prompt chat-history)))
+                                (except [e [MissingSchema ConnectionError]]
+                                  (error f"I can't get anything from [{args}]({args})")))
+      (= command "/summ-youtube") (try
+                                    (chat-extend chat-history
+                                                 #* (chat.enquire-summarize-youtube bot
+                                                                                    user-message
+                                                                                    args
+                                                                                    (inject system-prompt chat-history)))
+                                    (except [TranscriptsDisabled]
+                                      (error f"I can't find a transcript for [{args}](https://www.youtube.com/watch/?v={args})")))
+      ;;
+      ;; printing / debugging commands
+      (= command "/system") (info system-prompt)
+      (= command "/print-url") (try
+                                 (info (url->text args))
+                                 (except [e [MissingSchema ConnectionError]]
+                                   (error f"I can't get anything from [{args}]({args})")))
+      (= command "/print-youtube") (try
+                                     (info (youtube->text args))
+                                     (except [TranscriptsDisabled]
+                                       (error f"I can't find a transcript for [{args}](https://www.youtube.com/watch/?v={args})")))
+      ;;
+      (= command "/print-arxiv") (info (arxiv->text args))
+      (= command "/print-wikipedia") (info (wikipedia->text args))
       ;;
       ;; interface commands
       (= command "/clear") (clear)
@@ -177,7 +196,10 @@ either internally or to a chatbot / langchain.
       (= command "/width") (set-width line)
       (= command "/markdown") (toggle-markdown)
       (= command "/reset!") (do (info "Conversation discarded.")
-                                (setv chat-history []))
+                                (setv chat-history []
+                                      topic ""
+                                      context ""
+                                      knowledge ""))
       (= command "/undo") (setv chat-history (cut chat-history 0 -2))
       (in command ["/h" "/help"]) (info (help-str))
       (= command "/version") (info (version "llama_farm"))
@@ -194,9 +216,11 @@ either internally or to a chatbot / langchain.
                                (with [c (spinner-context f"{bot-name} is summarizing...")]
                                  (setv current-topic (chat.topic bot chat-history))
                                  (info current-topic)))
-      (= command "/context") (do (setv context (chat.recall chat-store bot current-topic))
-                                 (info context))
-      (= command "/system") (info system-prompt)
+      (= command "/context") (when current-topic
+                               (setv context (chat.recall chat-store bot current-topic)
+                                     knowledge (chat.recall knowledge-store bot current-topic))
+                               (info context)
+                               (info knowledge))
       ;;
       ;; vectorstore commands
       (= command "/ingest") (_ingest knowledge-store args)

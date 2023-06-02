@@ -4,6 +4,8 @@ Functions that produce strings from sources.
 
 (require hyrule.argmove [-> ->>])
 
+(import functools [reduce])
+
 (import datetime [datetime timezone])
 
 (import requests)

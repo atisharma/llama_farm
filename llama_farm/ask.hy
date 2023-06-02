@@ -79,7 +79,7 @@ Functions that return text from queries.
              #** kwargs))
 
 ;;; -----------------------------------------------------------------------------
-;;; Chat completion models: ..., chat-model, query -> {query result}
+;;; Chat completion models: ..., chat-model, query, chat, retriever -> {query result}
 ;;; -----------------------------------------------------------------------------
 
 (defn chat-retriever [chat-llm query chat-history
