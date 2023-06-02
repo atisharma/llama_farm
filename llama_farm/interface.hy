@@ -97,12 +97,12 @@ Functions that relate to output on the screen.
       (print-message msg margin :left-padding 4))
     (console.rule)))
 
-(defn print-markdown [s [style None]]
+(defn print-markdown [s [style None] [padding #(0 3 0 0)]]
   "Print some markdown to the screen."
   (-> s
       (sanitize-markdown)
       (Markdown)
-      (Padding #(0 2 0 0))
+      (Padding padding)
       (console.print :justify "left" :style style)))
 
 (defn info [s [style "green italic"]]
@@ -141,7 +141,6 @@ Functions that relate to output on the screen.
   (print)
   (print "\033[1A" :end "") ; up one line
   (print "\033[1A" :end "")) ; up one line
-
   
 (defn exception []
   "Formats and prints the current exception."
@@ -162,8 +161,8 @@ Functions that relate to output on the screen.
               (if render-markdown
                   (Markdown (sanitize-markdown (:content msg)))
                   (:content msg)))
-    (console.print output :justify "left")
-    (console.print))) ; a gap after the reply makes it more readable
+    (console.print output :justify "left")))
+    ;(console.print))) ; a gap after the reply makes it more readable
 
 (defn print-last-message [chat-history margin]
   (-> chat-history
@@ -172,13 +171,23 @@ Functions that relate to output on the screen.
 
 (defn print-sources [docs]
   "Print relevant document metadata from a list of docs."
+  (print-markdown
+    (.join "\n"
+           (lfor d docs
+                 (let [page f"{(:page d.metadata "")}"
+                       source (:source d.metadata "unknown source")]
+                   (+ " - " source (if page f" (p{page})" "")))))
+    :style "green italic")
+  (console.rule))
+
+(defn print-docs [docs]
+  "Print a list of docs."
   (console.rule)
-  (info "Sources:")
   (for [d docs]
-    (let [page f"{(:page d.metadata "")}"
-          source (:source d.metadata "unknown source")]
-      (console.print " - " source (if page f" (p{page})" "")
-                    :style "green")))
+    (print-markdown (format-metadata d)
+                    :style "bold green italic")
+    (print-markdown d.page-content
+                    :padding #(1 4 0 4)))
   (console.rule))
 
 (defn tabulate [rows headers
@@ -214,13 +223,32 @@ Functions that relate to output on the screen.
                     ;(.replace "\n" "\n\n"))]
     f"{l :<{(+ 1 margin)}} {(.strip (:content message))}"))
 
-(defn format-sources [response]
+(defn format-metadata [doc]
+  "Format a single document's metadata (as a list) for display as a string."
+  (let [source (:source doc.metadata "")
+        topic (:topic doc.metadata "")
+        time (:topic doc.metadata "")
+        metadata (filter None [source topic time])]
+    (.join "\n" metadata)))
+  
+(defn format-source [doc]
+  "Format a single document's source for display as a string."
+  (let [page (str (:page doc.metadata ""))]
+    (+ "- "
+       (:source doc.metadata "unknown source")
+       (if page f" (p{page})" ""))))
+
+(defn format-sources [docs]
+  "Format documents' sources (only) as a string."
+  (.join "\n"
+         (sfor d docs
+               (format-source d))))
+              
+(defn format-response-with-sources [response]
   "Format a response with sources as a string."
   (.join "\n"
     [(:result response)
      "\n"
      #* (sfor d (:source-documents response)
-              (let [page (str (:page d.metadata ""))]
-                (+ "- "
-                   (:source d.metadata "unknown source")
-                   (if page f" (p{page})" ""))))]))
+              (format-source d))]))
+          

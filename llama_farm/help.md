@@ -27,20 +27,22 @@ The usual readline shortcuts should be available.
 
 ### Chat-context query
 
-- **/wikipedia 'query'**         Ask a question with reference to wikipedia
-- **/arxiv 'query'**             Ask a question with access to arXiv
-- **/ask 'query'**               Ask a question over the knowledge store
-- **/sources 'query'**           Search the vectorstore for relevant sources (MMR search)
+- **/wikipedia 'query'**         Ask the bot a question with reference to wikipedia
+- **/arxiv 'query'**             Ask the bot a question with access to arXiv
+- **/ask 'query'**               Ask the bot a question over the knowledge store
 
 ### Memory
 
-- **/recall**                    Make a query against the bot's long-term chat memory
-- **/know**                      Make a query against the bot's knowledge store
 - **/context**                   Reset and show the current context (in case the topic changed quickly)
 - **/topic**                     Show the current topic
 - **/topic 'new topic'**         Manually set the current topic
 
-### Summarize
+- **/sources 'query'**           Directly search the vectorstore for relevant sources (MMR search)
+- **/similarity 'query'**        Directly search the vectorstore for relevant information (similarity search)
+- **/recall 'query'**            Make a query against the bot's long-term chat memory (summary)
+- **/know 'query'**              Make a query against the bot's knowledge store (summary)
+
+### Summarize external sources
 
 - **/youtube 'youtube-id'**      Summarize a Youtube video
 - **/url 'https://example.com'** Summarize example.com

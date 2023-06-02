@@ -21,11 +21,12 @@ either internally or to a chatbot / langchain.
                     clear-status-line
                     console
                     error
-                    format-sources
                     get-margin
                     info
                     print-chat-history
+                    print-docs
                     print-message
+                    print-sources
                     set-width
                     spinner-context
                     status-line
@@ -40,6 +41,7 @@ either internally or to a chatbot / langchain.
 ;; TODO: status-line: history (tokens) | model | current-topic | current tool
 
 ;; TODO: remove global state for current topic and context.
+;; TODO: manage state a bit more cleanly in this module
 
 (setv bot (config "bots" "default")
       current-topic "No topic is set yet."
@@ -74,6 +76,7 @@ either internally or to a chatbot / langchain.
   (info "The following bots are available.")
   (tabulate
     :rows (lfor p (bots)
+                :if (not (= p "default"))
                 (let [name f"{(.capitalize p)}" 
                       kind (:kind (params p) "fake")
                       model (:model_name (params p) "")
@@ -92,6 +95,15 @@ either internally or to a chatbot / langchain.
             (not p) f"*You are talking to {(.title bot)}.*"
             :else f"*{p} is not available. You are still talking to {(.title bot)}.*")))) 
   
+(defn chat-extend [chat-history user-msg reply-msg]
+  "Simply append the new messages to the chat history, log the change,
+   and return it."
+  (.append chat-history user-msg)
+  (.append chat-history reply-msg)
+  (file-append user-msg (config "chatlog"))
+  (file-append reply-msg (config "chatlog"))
+  chat-history)
+
 ;;; -----------------------------------------------------------------------------
 ;;; The parser: message, list[message] -> message | None
 ;;; -----------------------------------------------------------------------------
@@ -110,56 +122,52 @@ either internally or to a chatbot / langchain.
         margin (get-margin chat-history)
         [_command _ args] (.partition line " ")
         command (.lower _command)]
-    (unless (.startswith line "/")
-      (let [_chat-dict (chat.truncate bot
-                                      system-prompt
-                                      :chat-history chat-history
-                                      :current-topic current-topic
-                                      :context context)]
-        (setv chat-history (:chat-history _chat-dict)
-              context (:context _chat-dict)
-              current-topic (:current-topic _chat-dict)))
-      ; TODO: consolidate the places where the chat history is added to
-      (.append chat-history user-message)
-      (file-append user-message (config "chatlog")))
+    (let [_chat-dict (chat.truncate bot
+                                    system-prompt
+                                    :chat-history chat-history
+                                    :current-topic current-topic
+                                    :context context)]
+      (setv chat-history (:chat-history _chat-dict)
+            context (:context _chat-dict)
+            current-topic (:current-topic _chat-dict)))
     (cond
-      ;; commands that give a reply
       ;;
-      ;; move this to a function, and call with different chain-types, k, search type.
-      (= command "/ask") (.extend chat-history
-                                  (chat.enquire-db
-                                    bot
-                                    user-message
-                                    args
-                                    (inject system-prompt chat-history)
-                                    :chain-type chain-type))
-      (= command "/wikipedia") (.extend chat-history
-                                        (chat.enquire-wikipedia
-                                          bot
-                                          user-message
-                                          args
-                                          (inject system-prompt chat-history)
-                                          :chain-type chain-type))
-      (= command "/arxiv") (.extend chat-history
-                                    (chat.enquire-arxiv
-                                      bot
-                                      user-message
-                                      args
-                                      (inject system-prompt chat-history)
-                                      :chain-type chain-type))
+      ;; commands that give a reply
+      (= command "/ask") (chat-extend chat-history
+                                      #* (chat.enquire-db
+                                           bot
+                                           user-message
+                                           args
+                                           (inject system-prompt chat-history)
+                                           :chain-type chain-type))
+      (= command "/wikipedia") (chat-extend chat-history
+                                            #* (chat.enquire-wikipedia
+                                                 bot
+                                                 user-message
+                                                 args
+                                                 (inject system-prompt chat-history)
+                                                 :chain-type chain-type))
+      (= command "/arxiv") (chat-extend chat-history
+                                        #* (chat.enquire-arxiv
+                                             bot
+                                             user-message
+                                             args
+                                             (inject system-prompt chat-history)
+                                             :chain-type chain-type))
       (= command "/url") (try
-                           (.extend chat-history (chat.enquire-summarize-url bot
-                                                                        user-message
-                                                                        args
-                                                                        (inject system-prompt chat-history)))
+                           (chat-extend chat-history
+                                        #* (chat.enquire-summarize-url bot
+                                                                  user-message
+                                                                  args
+                                                                  (inject system-prompt chat-history)))
                            (except [e [MissingSchema ConnectionError]]
                              (error f"I can't get anything from [{args}]({args})")))
       (= command "/youtube") (try
-                               (.extend chat-history
-                                        (chat.enquire-summarize-youtube bot
-                                                                   user-message
-                                                                   args
-                                                                   (inject system-prompt chat-history)))
+                               (chat-extend chat-history
+                                            #* (chat.enquire-summarize-youtube bot
+                                                                               user-message
+                                                                               args
+                                                                               (inject system-prompt chat-history)))
                                (except [TranscriptsDisabled]
                                  (error f"I can't find a transcript for [{args}](https://www.youtube.com/watch/?v={args})")))
       ;;
@@ -180,11 +188,7 @@ either internally or to a chatbot / langchain.
       (in command ["/history" "/hist"]) (print-chat-history chat-history
                                                             :tokens (chat.token-count (inject system-prompt chat-history)))
       ;;
-      ;; vectorstore commands
-      (= command "/ingest") (_ingest knowledge-store args)
-      (= command "/sources") (info (format-sources (store.mmr knowledge-store args)))
-      (= command "/recall") (info (chat.recall chat-store bot args))
-      (= command "/know") (info (chat.recall knowledge-store bot args))
+      ;; chat memory management
       (= command "/topic") (if args
                                (setv current-topic args)
                                (with [c (spinner-context f"{bot-name} is summarizing...")]
@@ -194,14 +198,20 @@ either internally or to a chatbot / langchain.
                                  (info context))
       (= command "/system") (info system-prompt)
       ;;
+      ;; vectorstore commands
+      (= command "/ingest") (_ingest knowledge-store args)
+      (= command "/sources") (print-sources (store.mmr knowledge-store args))
+      (= command "/similarity") (print-docs (store.similarity knowledge-store args))
+      (= command "/recall") (info (chat.recall chat-store bot args))
+      (= command "/know") (info (chat.recall knowledge-store bot args))
+      ;;
       (.startswith line "/") (error f"Unknown command **{command}**.")
       ;;
-      ;; otherwise, normal chat
+      ;; otherwise, just chat
       :else (with [c (spinner-context f"{bot-name} is thinking...")]
-              (let [reply-msg (reply bot (inject system-prompt chat-history))]
-                (.append chat-history reply-msg)
-                (file-append reply-msg (config "chatlog"))
-                (print-message reply-msg margin))))
+              (let [reply-message (reply bot (+ (inject system-prompt chat-history) [user-message]))]
+                (chat-extend chat-history user-message reply-message)
+                (print-message reply-message margin))))
     ;;
     (status-line f"[{(bot-color bot)}]{bot-name}[default] | [green]{(chat.token-count (inject system-prompt chat-history))} tkns | {current-topic}")
     chat-history))

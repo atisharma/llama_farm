@@ -53,7 +53,7 @@ Functions that return messages or are associated with chat management.
         docs (chat->docs chat chat-topic)]
     (store.ingest-docs chat-store docs)))
 
-(defn recall [db bot topic]
+(defn recall [db bot topic [blockquote False]]
   "Summarise a topic from a memory store (usually the chat).
    Return a summary text which may then be used for injection in the system message."
   (with [c (spinner-context f"{(.capitalize bot)} is summarizing...")]
@@ -61,8 +61,13 @@ Functions that return messages or are associated with chat management.
           query f"{topic}\n{bot}:\n{username}:"
           k (or (config "storage" "sources") 6)
           docs (store.similarity db query :k k)
-          chat-str (.join "\n" (lfor d docs f"{(:time d.metadata)}\n{d.page-content}"))]
-      (ask.summarize (models.model bot) chat-str)))) 
+          chat-str (.join "\n" (lfor d docs f"{(:time d.metadata "---")}\n{d.page-content}"))
+          quoted-str (+ "> " (.replace chat-str "\n" "\n> "))]
+      (if blockquote
+          (.join "\n\n"
+                 [(ask.summarize (models.model bot) chat-str)
+                  quoted-str])
+          (ask.summarize (models.model bot) chat-str)))))
 
 (defn topic [bot chat-history]
   "Determine the current topic of conversation from the chat history."
