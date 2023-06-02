@@ -195,7 +195,9 @@ Functions that produce lists of Document objects.
             markdown (-> urls
                          (url->text))]
         (splitter.create-documents [markdown]
-                                   :metadatas [{"source" urls "url" urls}]))
+                                   :metadatas [{"source" urls
+                                                "url" urls
+                                                "time" (now->text)}]))
       (chain.from-iterable (lfor u urls (url u)))))
 
 (defn youtube->docs [youtube-id]
