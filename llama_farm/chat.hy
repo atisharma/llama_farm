@@ -28,14 +28,15 @@ Functions that return messages or are associated with chat management.
 
 (defn truncate [bot system-prompt * chat-history current-topic context knowledge]
   "Shorten the chat history if it gets too long, in which case:
-   - split it in two and store the first part in the chat store.
+   - split it and store the first part in the chat store.
    - set a new context.
    Return the (new or old) chat history, context, topic."
   (let [truncation-length (:truncation-length (models.params bot) 1400)
         max-tokens (:max-tokens (models.params bot) 12)
         ; need enough space to provide whole chat + system msg + new text
         token-length (+ max-tokens (token-count (inject system-prompt chat-history)))
-        cut-length (// (len chat-history) 2)]
+        ;; assume chat length is multiple of 2 (else we lose order of response)
+        cut-length (* 2 (// (len chat-history) 4))]
     (if (> token-length truncation-length)
       (let [pre (cut chat-history cut-length)
             post (cut chat-history cut-length None)]
@@ -43,8 +44,7 @@ Functions that return messages or are associated with chat management.
         {"chat_history" post
          "current_topic" (topic bot pre)
          "context" (recall chat-store bot current-topic)
-         "knowledge" (recall knowledge-store bot current-topic)
-         "current_topic" current-topic})
+         "knowledge" (recall knowledge-store bot current-topic)})
       {"chat_history" chat-history
        "context" context
        "knowledge" knowledge

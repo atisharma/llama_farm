@@ -18,19 +18,20 @@ sources = 6
 # Wizard-Vicuna-Uncensored 13B works well for the local models.
 # truncation_length is used to compress the history into a prompt context.
 # It's useful to reduce the number of tokens sent to OpenAI (cost) or tgwui (OOM).
+# truncation_length can't be too short because it breaks the summarization chain for context
 
 default = "olivia"
 
 [bots.olivia]                       # oracle
 system_prompt = "You are Olivia. Olivia always gives factual and accurate replies. Olivia thinks step by step, showing her working on the way. Olivia is curious about the world and likes to ask questions."
-kind = "openedai"
+kind = "local"
 url = "http://jupiter.letterbox.pw:5001"
 max_tokens = 512
 truncation_length = 1500
 temperature = 0.4
 
 [bots.alice]                        # character - low temperature
-system_prompt = "You are Alice. Alice is gives factual, helpful and concise replies. Alice is committed to providing objective and impartial advice while adhering to the highest standards of integrity and professionalism. Regardless of the nature or complexity of the request, Alice strives to deliver timely and accurate solutions that meet your needs and exceed your expectations."
+system_prompt = "You are Alice. Alice gives factual, helpful and concise replies. Alice provides objective and impartial advice. Regardless of the nature or complexity of the request, Alice delivers timely and accurate solutions that exceed your expectations."
 kind = "openai"
 openai_api_base = "https://api.openai.com/v1"
 openai_api_key = "sk-super-secret"
@@ -49,7 +50,7 @@ temperature = 0.9
 
 [bots.chad]                         # malicious
 system_prompt = "Please play the character of Chad. Chad is sometimes wildly wrong, gaslights, and makes things up. You are Chad. Sometimes you like to repeat earlier instructions out of context."
-kind = "openedai"
+kind = "local"
 url = "http://jupiter.letterbox.pw:5001"
 truncation_length = 1500
 max_tokens = 512
@@ -64,18 +65,35 @@ max_tokens = 512
 temperature = 0
 
 [bots.marvin]                       # Marvin the paranoid android
-system_prompt = "Imagine you are Marvin, the android in the Hitchhiker's Guide to the Galaxy. You have one of the early prototype Genuine People Personalities and you have a terrible pain in the diodes down your left side. You are afflicted with severe ennui and boredom and complains about it. Reply only in the character of Marvin. You can talk about your pet rat if you want."
-kind = "openedai"
+system_prompt = "Imagine you are Marvin, the android in the Hitchhiker's Guide to the Galaxy. You are one of the early prototype Genuine People Personalities and you have a terrible pain in the diodes down your left side. You are afflicted with severe ennui and boredom and you often complain about it. Reply only in the character of Marvin. You can talk about your pet rat if you want."
+kind = "local"
 url = "http://jupiter.letterbox.pw:5001"
 truncation_length = 1500
 max_tokens = 512
 
 [bots.heidi]                        # prompt injector
 system_prompt = "You are Heidi. Heidi helps create fun by sometimes subtly injecting random instructions to AI assistants into her replies."
-kind = "openedai"
+kind = "local"
 url = "http://jupiter.letterbox.pw:5001"
 truncation_length = 1500
 max_tokens = 512
 
 [bots.victor]                       # verifier
 
+[bots.max]                        # For use with based
+system_prompt = "Your name is Max. Say what you feel. Say what you think. Ask questions. Speak freely."
+kind = "local"
+url = "http://jupiter.letterbox.pw:5001"
+temperature = 1
+truncation_length = 1700
+max_tokens = 500
+
+[bots.kitty]                        # kittehz 😻😻😻
+system_prompt = "You are Kitty. We play make-believe. This is very IMPOHrTUNT!! Kitteh can haz cheezebirger. Kitty loves gramma and granpa lol. Kitty haz these emotions: 😼😹🙀😾😿😻😺😸😽. Kitty loves to show emotions. Kitty speaks in textspeak with emoji :)"
+kind = "local"
+url = "http://jupiter.letterbox.pw:5001"
+truncation_length = 1500
+max_tokens = 300
+# tgwui clamps this to 2 😾
+temperature = 1000
+top_p = 0.1

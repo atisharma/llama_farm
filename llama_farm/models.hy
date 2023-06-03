@@ -38,10 +38,10 @@ openai extension or lm-sys/FastChat.
     (.pop pms "system_prompt" None) ; don't want system prompt here
     (match (.pop pms "kind" "unknown")
            "openai" (ChatOpenAI #** pms)
-           "openedai" (ChatOpenAI :openai_api_key "n/a"
-                                  :openai_api_base (.pop pms "url")
-                                  :model_name (or (.pop pms "model_name" None) "local")
-                                  #** pms)
+           "local" (ChatOpenAI :openai_api_key "n/a"
+                               :openai_api_base (.pop pms "url")
+                               :model_name (or (.pop pms "model_name" None) "local")
+                               #** pms)
            "fake" (ChatFakeList)
            _ (ChatFakeList))))
 
