@@ -57,10 +57,10 @@ either internally or to a chatbot / langchain.
   (slurp (or (+ (os.path.dirname __file__) "/help.md")
              "llama_farm/help.md")))
 
-(defn _ingest [df files-or-url]
+(defn _ingest [#* args]
   "A convenience wrapper."
   (try
-    (for [f (shlex.split files-or-url)]
+    (for [f args]
       (if (is-url f)
         (store.ingest-urls knowledge-store f)
         (store.ingest-files knowledge-store f))) 
@@ -157,6 +157,20 @@ either internally or to a chatbot / langchain.
                                              args
                                              (inject system-prompt chat-history)
                                              :chain-type chain-type))
+      (= command "/url") (chat-extend chat-history
+                                      #* (chat.enquire-url
+                                           bot
+                                           user-message
+                                           args
+                                           (inject system-prompt chat-history)
+                                           :chain-type chain-type))
+      (= command "/youtube") (chat-extend chat-history
+                                          #* (chat.enquire-youtube
+                                               bot
+                                               user-message
+                                               args
+                                               (inject system-prompt chat-history)
+                                               :chain-type chain-type))
       ;;
       ;; summarization
       (= command "/summ-url") (try
@@ -223,7 +237,7 @@ either internally or to a chatbot / langchain.
                                (info knowledge))
       ;;
       ;; vectorstore commands
-      (= command "/ingest") (_ingest knowledge-store args)
+      (= command "/ingest") (_ingest (shlex.split args))
       (= command "/sources") (print-sources (store.mmr knowledge-store args))
       (= command "/similarity") (print-docs (store.similarity knowledge-store args))
       (= command "/recall") (info (chat.recall chat-store bot args))

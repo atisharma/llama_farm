@@ -26,13 +26,14 @@ Llama-farm speaks to any OpenAI-compatible API:
 - oobabooga/text-generation-webui (via its OpenAI-compatible API extension)
 - OpenAI
 - lm-sys/FastChat (untested)
+- keldenl/gpt-llama.cpp (untested)
 
 Llama-farm uses hwchase17/langchain for some abstractions (see limitations).
 
 The storage is backed by [faiss](https://github.com/facebookresearch/faiss). The wrapper to [chromadb](https://github.com/chroma-core/chroma) is
 written but not currently used.
 
-#### Help text
+### Help text
 The help text is [here](llama_farm/help.md).
 
 ### Setup

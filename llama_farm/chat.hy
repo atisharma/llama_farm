@@ -7,7 +7,7 @@ Functions that return messages or are associated with chat management.
 
 (import llama-farm [ask store models])
 (import .state [chat-store knowledge-store])
-(import .documents [tokenizer chat->docs])
+(import .documents [tokenizer chat->docs url->docs youtube->docs])
 (import .utils [config slurp msg inject user])
 (import .interface [get-margin
                     print-message
@@ -126,10 +126,38 @@ Functions that return messages or are associated with chat management.
         (print-message reply-msg margin)
         [{#** user-message "content" f"[ArXiv query] {args}"} reply-msg]))))
 
-;; TODO: consider setting up a temp db, ingesting docs, and querying over that
-;; https://python.langchain.com/en/latest/modules/chains/index_examples/chat_vector_db.html
 (defn enquire-docs [bot user-message args chat-history * docs chain-type]
-  "Chat over a set of documents.")
+  "Chat over a set of documents."
+  ;; sett up a temp db, ingest docs, and querying over that
+  ;; https://python.langchain.com/en/latest/modules/chains/index_examples/chat_vector_db.html
+  (with [c (spinner-context f"{(.capitalize bot)} is thinking...")]
+    (let [db (store.faiss f"/tmp/llama-farm/temp-db")]
+      (db.add-documents docs)
+      (let [margin (get-margin chat-history)
+            reply (ask.chat-db db
+                               (models.model bot)
+                               args
+                               (cut chat-history -6 None)
+                               :chain-type chain-type
+                               :sources True
+                               :search-kwargs {"k" (or (config "storage" "sources") 6)})]
+        (let [reply-msg (msg "assistant" f"{(:answer reply)}" bot)]
+          (print-message reply-msg margin)
+          [{#** user-message "content" f"[Knowledge query] {args}"} reply-msg])))))
+  
+(defn enquire-url [bot user-message args chat-history * chain-type]
+  "Chat over a URL.
+  The first word in args must be the URL."
+  (let [[url _ query] (.partition args " ")
+        docs (url->docs url)]
+    (enquire-docs bot user-message args chat-history :docs docs :chain-type chain-type)))
+  
+(defn enquire-youtube [bot user-message args chat-history * chain-type]
+  "Chat over a youtube transcript.
+  The first word in args must be the youtube id."
+  (let [[youtube-id _ query] (.partition args " ")
+        docs (youtube->docs youtube-id)]
+    (enquire-docs bot user-message args chat-history :docs docs :chain-type chain-type)))
   
 ;; TODO: or, use file, url and youtube retrievers here when they are finished.
 ;; or, work out how to chat over docs directly.

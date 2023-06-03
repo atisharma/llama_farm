@@ -4,7 +4,7 @@ from langchain.chat_models.base import SimpleChatModel
 
     
 class ChatFakeList(SimpleChatModel):
-  "Chat model class that cycles over responses."
+  "Chat model class that gives fixed response."
 
   response = "You need to specify a valid language model 'kind = ...' in the config.",
 
@@ -13,6 +13,6 @@ class ChatFakeList(SimpleChatModel):
     return "fake"
 
   def _call(self, * args, ** kwags):
-    "Chat model class that cycles over responses."
+    "Chat model class that gives fixed response."
     return self.response
     

@@ -1,5 +1,5 @@
 "
-Functions that produce strings from sources.
+This module provides functions that generate strings from a variety of sources.
 "
 
 (require hyrule.argmove [-> ->>])

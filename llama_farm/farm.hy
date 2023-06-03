@@ -1,4 +1,9 @@
-"A functional collection of llama agents.
+"
+*** THIS FILE IS AN ONGOING EXPERIMENT AND IS NOT CURRENTLY USED ***
+
+TODO: use microsoft/guidance.
+
+A functional collection of llama agents.
 
 Works fairly well with llama-supercot.
 
