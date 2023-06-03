@@ -5,18 +5,18 @@ The usual readline shortcuts should be available.
 
 ### REPL
 
-- **/help /h**                   Show this helpful text
-- **/quit /q /exit**             Quit
-- **/quit!**                     Quit without saving the conversation
-- **/version**                   Show the version of this client
-- **/clear**                     Clear the display
-- **/markdown**                  Toggle markdown rendering of messages
+- **/help /h**                      Show this helpful text
+- **/quit /q /exit**                Quit
+- **/quit!**                        Quit without saving the conversation
+- **/version**                      Show the version of this client
+- **/clear**                        Clear the display
+- **/markdown**                     Toggle markdown rendering of messages
 
 ### Bots
 
-- **/bots**                      List the available bots
-- **/bot /b**                    Show the current bot to whom input goes
-- **/bot 'name'**                Start talking to a particular bot
+- **/bots**                         List the available bots
+- **/bot /b**                       Show the current bot to whom input goes
+- **/bot 'name'**                   Start talking to a particular bot
 
 ### Conversation
 
@@ -31,18 +31,18 @@ The usual readline shortcuts should be available.
 - **/topic**                        Set a topic from the discussion
 - **/context**                      Set and show the current context 
 
-- **/sources 'query'**              Directly search the knowledge store for relevant sources (MMR search)
-- **/similarity 'query'**           Directly search the knowledge store for relevant information (similarity search)
-- **/recall 'query'**               Make a query against the bot's long-term chat memory (summary)
-- **/know 'query'**                 Make a query against the bot's knowledge store (summary)
+- **/sources 'query'**              Search the knowledge store for relevant sources (MMR search)
+- **/similarity 'query'**           Search the knowledge store for relevant information (similarity search)
+- **/recall 'query'**               Make a query against the long-term chat memory (summary)
+- **/know 'query'**                 Make a query against the knowledge store (summary)
 
 ### Chat-aware query
 
-- **/ask 'query'**                  Ask the bot a question over the knowledge store
-- **/wikipedia 'query'**            Ask the bot a question with reference to wikipedia
-- **/arxiv 'query'**                Ask the bot a question with access to arXiv
-- **/youtube 'youtube-id' 'query'** Ask the bot a question about a youtube transcript
-- **/url 'url 'query'**             Ask the bot a question about a youtube transcript
+- **/ask 'query'**                  Ask a question over the knowledge store
+- **/wikipedia 'query'**            Ask a question with reference to wikipedia
+- **/arxiv 'query'**                Ask a question with access to arXiv
+- **/youtube 'youtube-id' 'query'** Ask a question about a youtube transcript
+- **/url 'url 'query'**             Ask a question about a web page
 
 ### Summarize external sources
 
