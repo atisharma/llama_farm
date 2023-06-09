@@ -33,7 +33,7 @@ Return:
 
 (import .utils [config params tee])
 (import .guides [model text->summary text->points text->topic])
-(import .interface [info error])
+(import .interface [info error status-line])
 
 
 (setv tokenizer (AutoTokenizer.from_pretrained (config "storage" "tokenizer")))

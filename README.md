@@ -76,6 +76,6 @@ less that of OpenAI's models.
   * models.reply (do first, easy)
 - Reconsider store document size, since summarization works well
 - Define tools for freeform memory access rather than /command syntax
-- You can grep the codebase for "TODO:" tags
+- You can grep the codebase for "TODO:" tags; these will migrate to github issues
 - Define JSON API templates for other web tools
 - Self-chat between bots with intention/task injection

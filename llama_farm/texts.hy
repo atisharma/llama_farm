@@ -29,6 +29,7 @@ This module provides functions that generate strings from a variety of sources.
    !!! WARNING !!!
    This takes a fair amount (1-2G) of VRAM.
    !!! WARNING !!!"
+  ;; Defaults to user's locale, this may not be desirable for summarization
   (let [languages [(get (locale.getlocale) 0) "en" "en-GB"]
         avail-transcripts (.list-transcripts YouTubeTranscriptApi youtube-id)
         transcript (.fetch (.find-transcript avail-transcripts languages))

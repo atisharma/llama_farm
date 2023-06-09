@@ -195,6 +195,6 @@ Functions that return messages or are associated with chat management.
     (let [title (youtube-title->text youtube-id)
           margin (get-margin chat-history)
           summary (ask.summarize-youtube bot youtube-id)]
-      (let [reply-msg (msg "assistant" f"**{title}**\n\n{summary}" bot)]
+      (let [reply-msg (msg "assistant" f"###{title}\n{summary}" bot)]
         (print-message reply-msg margin)
         [{#** user-message "content" f"Summarize the Youtube video [{youtube-id}](https://www.youtube.com/watch?v={youtube-id})"} reply-msg]))))

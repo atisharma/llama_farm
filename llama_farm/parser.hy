@@ -125,6 +125,7 @@ either internally or to a chatbot / langchain.
     (cond
       ;;
       ;; commands that give a reply
+      ;; TODO: revise this chain for guidance.
       (= command "/ask") (chat.extend chat-history
                                       #* (chat.enquire-db
                                            bot

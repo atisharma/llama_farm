@@ -150,7 +150,7 @@ DATA MODEL
     (ncat
       ;(system "Your sole purpose is to summarize text into bullet points.")
       (system "You are a helpful assistant who follows instructions carefully.")
-      (user "Summarize this text as a list of bullet points, preserving the most interesting, pertinent and important points:
+      (user "Summarize this text as a list of bullet points, preserving the most interesting, pertinent and important points. Remove legal disclaimers and advertising.
 ---
 {{input}}
 ---
@@ -162,7 +162,7 @@ Write only bullet points, with no padding text.")
   (guidance
     (ncat
       (system "You are a helpful assistant who follows instructions carefully.")
-      (user "Please concisely rewrite the following text, preserving the most interesting, pertinent and important points:
+      (user "Please concisely rewrite the following text, preserving the most interesting, pertinent and important points. Remove legal disclaimers and advertising.
 ---
 {{input}}
 ---
@@ -211,7 +211,7 @@ Your prompt is:
 
 (defn polya []
   "Apply a problem-solving approach to a puzzle, inspired by Polya's method."
-  ; ask it for the square root of pi.
+  ;; ask it for the square root of pi.
   (guidance
     (ncat (system "You are a helpful, intelligent assistant who follows instructions carefully. You proceed step by step.")
           (user "Consider the following problem.
