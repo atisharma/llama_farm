@@ -51,5 +51,6 @@ The usual readline shortcuts should be available.
 
 ### Knowledge management
 
-- **/ingest 'filename(s)'**         Ingest a filename, list of filenames (separated by spaces, no quotes), or directory (recursively) to the knowledge store  
+- **/ingest 'filename'**            Ingest a filename, list of filenames, or directory (recursively)
+- **/ingest "f1" "f2" "dir3"**      (quoting as necessary)
 - **/ingest 'urls(s)'**             Ingest a webpage at a single url or list of urls (separated by spaces, no quotes)

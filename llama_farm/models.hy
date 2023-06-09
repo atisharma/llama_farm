@@ -10,26 +10,13 @@ openai extension or lm-sys/FastChat.
 
 (require hyrule.argmove [-> ->>])
 
-(import functools [partial])
-(import itertools [cycle])
-
 (import langchain.chat-models [ChatOpenAI])
 (import langchain.chat-models.openai [_convert-message-to-dict :as msg->dict
                                       _convert-dict-to-message :as dict->msg])
 
-(import .utils [config system])
+(import .utils [config params system])
 (import .fake [ChatFakeList])
 
-
-(defn bots []
-  "Just a list of bots defined in the config."
-  (-> (config "bots")
-      (.keys)
-      (list)))
-
-(defn params [bot]
-  "Return a dict with parameters dict as values and bot name as keys."
-  (get (config "bots") (.lower bot)))
 
 (defn model [bot]
   "Return correct chat model instance for the kind.

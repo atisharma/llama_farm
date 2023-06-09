@@ -18,7 +18,7 @@ quality of information available is more important than the quantity.
 
 ### Internet access & summarization
 You can ask it questions with access to arXiv or wikipedia.
-It can summarize Youtube video transcripts and URLs.
+It can summarize Youtube video transcripts, URLs and your files.
 
 ### Compatibility and technology
 Llama-farm speaks to any OpenAI-compatible API:
@@ -28,10 +28,10 @@ Llama-farm speaks to any OpenAI-compatible API:
 - lm-sys/FastChat (untested)
 - keldenl/gpt-llama.cpp (untested)
 
-Llama-farm uses hwchase17/langchain for some abstractions (see limitations).
+Llama-farm uses microsoft/guidance and hwchase17/langchain for some abstractions (see limitations).
 
 The storage is backed by [faiss](https://github.com/facebookresearch/faiss). The wrapper to [chromadb](https://github.com/chroma-core/chroma) is
-written but not currently used.
+written but is not currently used or tested.
 
 ### Help text
 The help text is [here](llama_farm/help.md).
@@ -59,17 +59,23 @@ $ llama-farm
 
 ### Suitable models
 Llama-farm works very well with OpenAI's gpt-3.5-turbo.
-Wizard-Vicuna-Uncensored also works very well. It even works
-surprisingly well with WizardLM-7B!
-But see limitations below.
+Wizard-Vicuna-Uncensored, WizardLM, etc also work very well. It even
+works surprisingly well with WizardLM-7B!  But see limitations below.
 
 ### Limitations and bugs
-The context length limitation of Llama models (2048 tokens) is half or
-less that of OpenAI's models. Langchain assumes the longer context, so
-some commands involving these chains (wikipedia, arxiv, summarization)
-may break on locally hosted models.
+- Larger LLaMA models (30B) work much better.
+- The context length limitation of Llama models (2048 tokens) is half or
+less that of OpenAI's models.
+- The OpenAI API (and compatible ones) do not expose a number of
+  capabilities that local models have. The full power of the guidance
+  library is therefore not available.
 
 ### Roadmap
-- Reduce dependence on langchain's chains; more local prompts
-- Self-chat between bots with intention/task injection
+- Replace LLMs with guides:
+  * ask.xyz
+  * models.reply (do first, easy)
+- Reconsider store document size, since summarization works well
+- Define tools for freeform memory access rather than /command syntax
 - You can grep the codebase for "TODO:" tags
+- Define JSON API templates for other web tools
+- Self-chat between bots with intention/task injection

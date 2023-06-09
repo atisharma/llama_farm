@@ -204,7 +204,7 @@ Functions that produce lists of Document objects.
   "Load and punctuate youtube transcript as list of documents.
    Youtube 'transcripts' are just a long list of words with no punctuation
    or identification of the speaker, so we apply a punctuation filter.
-   Youtube transcripts also tend to be long and rambling, so we need to
+   Youtube transcripts also tend to be long and rambling, so we will need to
    summarize them."
   (let [text (youtube->text youtube-id)
         url f"https://www.youtube.com/watch?v={youtube-id}"

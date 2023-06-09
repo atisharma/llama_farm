@@ -1,6 +1,6 @@
 user = "user"
 chain-type = "map_reduce"   # map_rerank stuff
-logfile = "llama-farm.log"
+logfile = "llama_farm.log"
 chatlog = "chat_history.json"
 
 [storage]

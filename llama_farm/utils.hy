@@ -41,6 +41,14 @@
     (except [KeyError]
       None)))
 
+(defn bots []
+  "Just a list of bots defined in the config."
+  (lfor #(b v) (.items (config "bots")) :if (isinstance v dict) b))
+
+(defn params [bot]
+  "Return a dict with parameters dict as values and bot name as keys."
+  (get (config "bots") (.lower bot)))
+
 (defn rlinput [prompt [prefill ""]]
   "Like python's input() but using readline."
   (readline.set_startup_hook (fn [] (readline.insert_text prefill)))
@@ -83,7 +91,6 @@
       (with [f (open fname :mode "w" :encoding "UTF-8")]
         (.write f (.format "[\n{}]\n" (json.dumps record :indent 4)))))))
 
-
 (defn slurp [fname]
   "Read a text file."
   (let [path (Path fname)]
@@ -113,6 +120,9 @@
 (defn user [content username]
   (msg "user" content username))
 
+(defn assistant [content]
+  (msg "assistant" content "assistant"))
+
 (defn inject [system-message chat-history]
   "Prepend the chat history with the system message."
   (+ [(system system-message)]
@@ -126,7 +136,7 @@
          (lfor m chat-history
                f"{(:bot m)}: {(:content m)}")))
 
-;; possibly defunct - consider removing the following
+;; defunct - consider removing the following
 
 (defn dprint [#* args]
   "Pretty print a bunch of args."

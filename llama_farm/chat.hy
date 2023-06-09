@@ -5,15 +5,15 @@ Functions that return messages or are associated with chat management.
 (require hyrule.argmove [-> ->> as->])
 (require hyrule.control [unless])
 
-(import llama-farm [ask store models])
+(import llama-farm [ask store models guides summaries])
 (import .state [chat-store knowledge-store])
 (import .documents [tokenizer chat->docs url->docs youtube->docs])
-(import .utils [config slurp msg inject user])
+(import .utils [config params file-append slurp format-chat-history inject msg user system])
+(import .texts [now->text])
 (import .interface [get-margin
                     print-message
                     print-sources
                     spinner-context])
-
 
 ;;; -----------------------------------------------------------------------------
 ;;; chat management
@@ -31,24 +31,25 @@ Functions that return messages or are associated with chat management.
    - split it and store the first part in the chat store.
    - set a new context.
    Return the (new or old) chat history, context, topic."
-  (let [truncation-length (:truncation-length (models.params bot) 1400)
-        max-tokens (:max-tokens (models.params bot) 12)
+  (let [truncation-length (:truncation-length (params bot) 1800)
+        max-tokens (:max-tokens (params bot) 20)
         ; need enough space to provide whole chat + system msg + new text
         token-length (+ max-tokens (token-count (inject system-prompt chat-history)))
         ;; assume chat length is multiple of 2 (else we lose order of response)
         cut-length (* 2 (// (len chat-history) 4))]
     (if (> token-length truncation-length)
       (let [pre (cut chat-history cut-length)
-            post (cut chat-history cut-length None)]
+            post (cut chat-history cut-length None)
+            new-topic (topic bot post)]
         (commit-chat bot pre)
         {"chat_history" post
-         "current_topic" (topic bot pre)
-         "context" (recall chat-store bot current-topic)
-         "knowledge" (recall knowledge-store bot current-topic)})
+         "current_topic" new-topic
+         "context" (recall chat-store bot new-topic)
+         "knowledge" (recall knowledge-store bot new-topic)})
       {"chat_history" chat-history
+       "current_topic" current-topic
        "context" context
-       "knowledge" knowledge
-       "current_topic" current-topic})))
+       "knowledge" knowledge})))
 
 (defn commit-chat [bot chat]
   "Save a chat history fragment to the chat store."
@@ -68,17 +69,31 @@ Functions that return messages or are associated with chat management.
           quoted-str (+ "> " (.replace chat-str "\n" "\n> "))]
       (if blockquote
           (.join "\n\n"
-                 [(ask.summarize (models.model bot) chat-str)
+                 [(summaries.summarize bot chat-str :max-token-length 200)
                   quoted-str])
-          (ask.summarize (models.model bot) chat-str)))))
+          (summaries.summarize bot chat-str :max-token-length 200)))))
 
 (defn topic [bot chat-history]
-  "Determine the current topic of conversation from the chat history."
+  "Determine the current topic of conversation from the chat history. Return text."
   (let [username (or (config "user") "user")
-        topic-msg (user "Please summarize the conversation so far in less than ten words." username)
-        topic-reply (models.reply bot (inject "Your sole purpose is to express the topic of conversation in one short sentence."
-                                              (+ chat-history [topic-msg])))]
-    (:content topic-reply)))
+        chat-text (format-chat-history chat-history)]
+    (summaries.topic bot chat-text)))
+
+(defn reply [bot chat-history user-message system-prompt]
+  "Simply reply to the chat with a message."
+  (let [model (guides.model bot)
+        program (guides.chat->reply chat-history user-message system-prompt)
+        output (program :llm model)
+        reply (:result output)]
+    (msg "assistant" reply bot)))
+
+(defn extend [chat-history #* msgs]
+  "Simply append the new messages to the chat history, log the change,
+   and return it."
+  (for [msg msgs]
+    (.append chat-history msg)
+    (file-append msg (config "chatlog")))
+  chat-history)
 
 ;;; -----------------------------------------------------------------------------
 ;;; Enquiry functions: query ... -> message pair
@@ -86,6 +101,7 @@ Functions that return messages or are associated with chat management.
 
 ;; TODO: abstract out boilerplate here
 
+; TODO: rewrite
 (defn enquire-db [bot user-message args chat-history * chain-type]
   (with [c (spinner-context f"{(.capitalize bot)} is thinking...")]
     (let [margin (get-margin chat-history)
@@ -101,6 +117,7 @@ Functions that return messages or are associated with chat management.
         (print-message reply-msg margin)
         [{#** user-message "content" f"[Knowledge query] {args}"} reply-msg]))))
 
+; TODO: rewrite
 (defn enquire-wikipedia [bot user-message args chat-history * chain-type]
   (with [c (spinner-context f"{(.capitalize bot)} is thinking...")]
     (let [margin (get-margin chat-history)
@@ -113,6 +130,7 @@ Functions that return messages or are associated with chat management.
         (print-message reply-msg margin)
         [{#** user-message "content" f"[Wikipedia query] {args}"} reply-msg]))))
 
+; TODO: rewrite
 (defn enquire-arxiv [bot user-message args chat-history * chain-type]
   (with [c (spinner-context f"{(.capitalize bot)} is thinking...")]
     (let [margin (get-margin chat-history)
@@ -126,6 +144,7 @@ Functions that return messages or are associated with chat management.
         (print-message reply-msg margin)
         [{#** user-message "content" f"[ArXiv query] {args}"} reply-msg]))))
 
+; TODO: rewrite
 (defn enquire-docs [bot user-message args chat-history * docs chain-type]
   "Chat over a set of documents."
   ;; sett up a temp db, ingest docs, and querying over that
@@ -159,23 +178,21 @@ Functions that return messages or are associated with chat management.
         docs (youtube->docs youtube-id)]
     (enquire-docs bot user-message args chat-history :docs docs :chain-type chain-type)))
   
-;; TODO: or, use file, url and youtube retrievers here when they are finished.
-;; or, work out how to chat over docs directly.
-
+;; TODO: use file reader here
 (defn enquire-summarize-url [bot user-message url chat-history]
   "Summarize a URL."
-  (with [c (spinner-context f"{(.capitalize bot)} is thinking...")]
+  (with [c (spinner-context f"{(.capitalize bot)} is summarizing...")]
     (let [margin (get-margin chat-history)
-          summary (ask.summarize-url (models.model bot) url)]
+          summary (ask.summarize-url bot url)]
       (let [reply-msg (msg "assistant" f"{summary}" bot)]
         (print-message reply-msg margin)
         [{#** user-message "content" f"Summarize the webpage {url}"} reply-msg]))))
 
 (defn enquire-summarize-youtube [bot user-message youtube-id chat-history]
   "Summarize a Youtube video (transcript)."
-  (with [c (spinner-context f"{(.capitalize bot)} is thinking...")]
+  (with [c (spinner-context f"{(.capitalize bot)} is summarizing...")]
     (let [margin (get-margin chat-history)
-          summary (ask.summarize-youtube (models.model bot) youtube-id)]
+          summary (ask.summarize-youtube bot youtube-id)]
       (let [reply-msg (msg "assistant" f"{summary}" bot)]
         (print-message reply-msg margin)
         [{#** user-message "content" f"Summarize the Youtube video [{youtube-id}](https://www.youtube.com/watch?v={youtube-id})"} reply-msg]))))

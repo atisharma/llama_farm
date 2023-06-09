@@ -2,11 +2,9 @@
 Functions that return text from queries.
 "
 
-;; TODO: a lot of this could be abstracted by macros.
+;; TODO: a lot of this could be abstracted away...
 
 (require hyrule.argmove [-> ->> as->])
-
-(import itertools [repeat])
 
 (import langchain.chains [RetrievalQA
                           VectorDBQA
@@ -21,6 +19,8 @@ Functions that return text from queries.
 
 (import .texts [url->text youtube->text])
 (import .documents [url->docs youtube->docs file->docs])
+(import .summaries [summarize-hybrid])
+(import .utils [config])
 
 
 ;;; -----------------------------------------------------------------------------
@@ -50,6 +50,7 @@ Functions that return text from queries.
 ;;; Text completion models: ..., llm, query -> {query result}
 ;;; -----------------------------------------------------------------------------
 
+;; FIXME: this is the one to rewrite with guidance
 (defn retriever [retriever llm query
                  [chain-type "stuff"]
                  [sources False]]
@@ -82,6 +83,7 @@ Functions that return text from queries.
 ;;; Chat completion models: ..., chat-model, query, chat, retriever -> {query result}
 ;;; -----------------------------------------------------------------------------
 
+;; FIXME: this is the one to rewrite with guidance
 (defn chat-retriever [chat-llm query chat-history
                       [retriever retriever] 
                       [chain-type "stuff"]
@@ -157,21 +159,14 @@ Functions that return text from queries.
 ;;; Summary / query functions : model, query -> text
 ;;; -----------------------------------------------------------------------------
 
-(defn summarize [model text]
-  "Summarize a long text (as text)."
-  (let [summary-chain (load-summarize-chain model
-                                            :chain_type "map_reduce")
-        summarize-document-chain (AnalyzeDocumentChain :combine-docs-chain summary-chain)]
-    (.run summarize-document-chain text)))
-
-(defn summarize-youtube [model youtube-id]
+(defn summarize-youtube [bot youtube-id]
   "Summarize a youtube video transcript (as text)."
   (->> youtube-id
        (youtube->text)
-       (summarize model)))  
+       (summarize-hybrid bot :max-token-length (config "summary-chat-size"))))  
 
-(defn summarize-url [model url]
+(defn summarize-url [bot url]
   "Summarize a webpage (as text)."
   (->> url
        (url->text)
-       (summarize model)))  
+       (summarize-hybrid bot :max-token-length (config "summary-chat-size"))))  
