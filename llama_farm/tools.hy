@@ -154,3 +154,5 @@ Example: [[location]] returns values for all parameters."
     (if (in s loc)
         f"(location {s}) {(get loc s)}"
         f"(location) {_zip}, {city}, {region}, {country}, [{lat}, {lon}]")))
+
+;; TODO: youtube summary

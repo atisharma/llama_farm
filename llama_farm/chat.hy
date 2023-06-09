@@ -9,7 +9,7 @@ Functions that return messages or are associated with chat management.
 (import .state [chat-store knowledge-store])
 (import .documents [tokenizer chat->docs url->docs youtube->docs])
 (import .utils [config params file-append slurp format-chat-history inject msg user system])
-(import .texts [now->text])
+(import .texts [now->text youtube-title->text])
 (import .interface [get-margin
                     print-message
                     print-sources
@@ -79,14 +79,6 @@ Functions that return messages or are associated with chat management.
         chat-text (format-chat-history chat-history)]
     (summaries.topic bot chat-text)))
 
-(defn reply [bot chat-history user-message system-prompt]
-  "Simply reply to the chat with a message."
-  (let [model (guides.model bot)
-        program (guides.chat->reply chat-history user-message system-prompt)
-        output (program :llm model)
-        reply (:result output)]
-    (msg "assistant" reply bot)))
-
 (defn extend [chat-history #* msgs]
   "Simply append the new messages to the chat history, log the change,
    and return it."
@@ -94,6 +86,15 @@ Functions that return messages or are associated with chat management.
     (.append chat-history msg)
     (file-append msg (config "chatlog")))
   chat-history)
+
+;; TODO: call tools if appropriate
+(defn reply [bot chat-history user-message system-prompt]
+  "Simply reply to the chat with a message."
+  (let [model (guides.model bot)
+        program (guides.chat->reply chat-history user-message system-prompt)
+        output (program :llm model)
+        reply (:result output)]
+    (msg "assistant" reply bot)))
 
 ;;; -----------------------------------------------------------------------------
 ;;; Enquiry functions: query ... -> message pair
@@ -191,8 +192,9 @@ Functions that return messages or are associated with chat management.
 (defn enquire-summarize-youtube [bot user-message youtube-id chat-history]
   "Summarize a Youtube video (transcript)."
   (with [c (spinner-context f"{(.capitalize bot)} is summarizing...")]
-    (let [margin (get-margin chat-history)
+    (let [title (youtube-title->text youtube-id)
+          margin (get-margin chat-history)
           summary (ask.summarize-youtube bot youtube-id)]
-      (let [reply-msg (msg "assistant" f"{summary}" bot)]
+      (let [reply-msg (msg "assistant" f"**{title}**\n\n{summary}" bot)]
         (print-message reply-msg margin)
         [{#** user-message "content" f"Summarize the Youtube video [{youtube-id}](https://www.youtube.com/watch?v={youtube-id})"} reply-msg]))))

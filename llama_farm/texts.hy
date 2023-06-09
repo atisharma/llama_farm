@@ -10,6 +10,7 @@ This module provides functions that generate strings from a variety of sources.
 
 (import requests)
 (import markdownify [markdownify])
+(import locale)
 (import lxml)
 (import lxml.html.clean [Cleaner])
 
@@ -28,7 +29,9 @@ This module provides functions that generate strings from a variety of sources.
    !!! WARNING !!!
    This takes a fair amount (1-2G) of VRAM.
    !!! WARNING !!!"
-  (let [transcript (.get-transcript YouTubeTranscriptApi youtube-id)
+  (let [languages [(get (locale.getlocale) 0) "en" "en-GB"]
+        avail-transcripts (.list-transcripts YouTubeTranscriptApi youtube-id)
+        transcript (.fetch (.find-transcript avail-transcripts languages))
         formatter (TextFormatter)
         text (.format_transcript formatter transcript)]
     (if punctuate
@@ -37,6 +40,15 @@ This module provides functions that generate strings from a variety of sources.
           (import deepmultilingualpunctuation [PunctuationModel])
           (.restore-punctuation (PunctuationModel) text))
         text)))
+
+(defn youtube-title->text [youtube-id]
+  "Return the title of the youtube video."
+  (let [url f"https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={youtube-id}&format=json"
+        response (.get requests url)]
+    (if response.ok
+        (let [data (.json response)]
+          (:title data "No title provided"))
+        (.raise_for_status response))))
 
 (defn url->text [url]
   "Fetch a URL's content as cleaned markdown text."
