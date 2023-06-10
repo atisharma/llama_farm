@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0] - 2023-06-10
+
+### Bug Fixes
+
+- Youtube transcript in local lang; print title
+
+### Features
+
+- First pass at incorporating guidance chains
+- The big rewrite, dropping langchain's chains and using guidance.
+
+## [0.2.1] - 2023-06-03
+
+### Documentation
+
+- Fix error in help.md
+
 ## [0.2.0] - 2023-06-03
 
 ### Bug Fixes
