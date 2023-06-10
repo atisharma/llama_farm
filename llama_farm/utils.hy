@@ -46,7 +46,7 @@
   (lfor #(b v) (.items (config "bots")) :if (isinstance v dict) b))
 
 (defn params [bot]
-  "Return a dict with parameters dict as values and bot name as keys."
+  "Return a dict of bot's parameters."
   (get (config "bots") (.lower bot)))
 
 (defn rlinput [prompt [prefill ""]]
@@ -136,6 +136,14 @@
          (lfor m chat-history
                f"{(:bot m)}: {(:content m)}")))
 
+(defn format-docs [docs]
+  "Format a list of Document objects"
+  (.join "\n"
+         (lfor d docs f"{(:source d.metadata "")}
+{(:time d.metadata "---")}
+{d.page-content}")))
+
+  
 ;; defunct - consider removing the following
 
 (defn dprint [#* args]

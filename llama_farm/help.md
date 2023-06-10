@@ -38,11 +38,10 @@ The usual readline shortcuts should be available.
 
 ### Chat-aware query
 
-- **/ask 'query'**                  Ask a question over the knowledge store
-- **/wikipedia 'query'**            Ask a question with reference to wikipedia
-- **/arxiv 'query'**                Ask a question with access to arXiv
-- **/youtube 'youtube-id' 'query'** Ask a question about a youtube transcript
-- **/url 'url 'query'**             Ask a question about a web page
+- **/ask 'query'**                  Chat over the knowledge store and chat memory
+- **/wikipedia 'query'**            Chat with reference to wikipedia
+- **/youtube 'youtube-id' 'query'** Chat over a youtube transcript
+- **/url 'url 'query'**             Chat over a web page
 
 ### Summarize external sources
 

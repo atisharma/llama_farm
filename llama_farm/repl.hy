@@ -2,7 +2,8 @@
 The main REPL where we chat to the bot and issue commands.
 "
 
-;; TODO: consider changing `/` command syntax to `[]` or `{}` or other paired
+;; TODO: bark, whisper
+;; TODO: eval Hy in user's text
 
 (require hyrule.argmove [-> ->> as->])
 (require hyrule.control [unless])

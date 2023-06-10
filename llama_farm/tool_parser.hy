@@ -22,10 +22,11 @@ Tools are called with the syntax `[[tool args]]`.
 Description: {f.__doc__}")
 
 (defn contains-command [s]
-  "True if string has guidance markers in."
+  "True if string has command markers in."
   (and (in "[[" s)
        (in "]]" s)))
 
+;; TODO: don't match literal code blocks ``xyz`` https://regex101.com/r/fubH7e/1
 (defn command-parse [s]
   "A recursive descent parser in lisp style."
   (let [m (re.search r"(\[\[[^\[\]]+]])" s re.MULTILINE)] ; match "[[command args]]" syntax

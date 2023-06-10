@@ -22,10 +22,11 @@ A tool's docstring is formatted using `tool-parser.describe` and stuffed into th
 
 (import llama-farm [texts])
 
-;;; Don't import functions here unless you want them to be available to the parser.
-;;; Even then, better to wrap them because the help text will be long and inappropriate.
+;; Don't import functions here unless you want them to be available to the parser.
+;; Even then, better to wrap them because the help text will be long and inappropriate.
 
-;;; TODO: incorporate summarization, but think about the plumbing first
+;; TODO: incorporate summarization, but think about the plumbing first
+;; TODO: maybe use guidance format and recursively parse?
 
 ;;; -----------------------------------------------------------------------------
 ;;; tool: command_string -> text
@@ -62,6 +63,7 @@ Example: [[url https://www.example.com]]"
          [f"(url {url})"
           (texts.url->text url)]))
   
+;; TODO: get list of relevant wikipedia pages as a tool, maybe let llm choose best
 (defn wikipedia [topic [index 0]]
   "Get current facts from Wikipedia summaries.
 Syntax: [[wikipedia topic]]
@@ -155,4 +157,4 @@ Example: [[location]] returns values for all parameters."
         f"(location {s}) {(get loc s)}"
         f"(location) {_zip}, {city}, {region}, {country}, [{lat}, {lon}]")))
 
-;; TODO: youtube summary
+;; TODO: url, youtube summary - how to close over llm?

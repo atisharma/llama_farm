@@ -14,11 +14,10 @@ This module provides functions that generate strings from a variety of sources.
 (import lxml)
 (import lxml.html.clean [Cleaner])
 
+(import wikipedia :as wiki)
+(import arxiv)
 (import youtube_transcript_api [YouTubeTranscriptApi])
 (import youtube_transcript_api.formatters [TextFormatter])
-
-(import langchain.utilities [ArxivAPIWrapper WikipediaAPIWrapper])
-(import langchain.utilities.duckduckgo_search [DuckDuckGoSearchAPIWrapper])
 
 
 (defn youtube->text [youtube-id [punctuate False]]
@@ -63,18 +62,35 @@ This module provides functions that generate strings from a variety of sources.
         (lxml.html.tostring)
         (markdownify :heading-style "ATX" :strip "style"))))
 
-(defn ddg->text [topic]
-  "Get the DuckDuckGo summary on a topic (as text)."
-  (.run (DuckDuckGoSearchAPIWrapper) topic))
-
-(defn arxiv->text [topic]
+(defn arxiv->text [topic [n 12]]
   "Get relevant arxiv summaries on a topic (as text)."
-  (.run (ArxivAPIWrapper) topic))
+  (let [results (.results (arxiv.Search :query topic :max-results n))]
+    (.join "\n\n---\n\n"
+           (lfor paper results
+                 (let [authors (.join ", " (map str paper.authors))]
+                   f"**{paper.title}**
+Authors: *{authors}*
+Date: {paper.published}
+{paper.entry_id}  DOI: {paper.doi}
+Summary:
+{paper.summary}")))))
 
-(defn wikipedia->text [topic]
-  "Get relevant Wikipedia summaries on a topic (as text)."
-  (.run (WikipediaAPIWrapper) topic))
-
+(defn wikipedia->text [topic [index 0]]
+  "Get the full Wikipedia page on a topic (as text)."
+  (try
+    (let [pages (wiki.search topic)
+          best (get pages index)
+          summary (wiki.summary best :auto-suggest False)
+          page (wiki.page best :auto-suggest False)]
+        (.join "\n"
+               [f"Wikipedia: {page.title}"
+                f"{page.url}"
+                f"{page.content}"
+                "\nOther wikipedia pages:"
+                (.join ", " pages)]))
+    (except [wiki.exceptions.DisambiguationError]
+      (wikipedia topic :index (inc index)))))
+  
 (defn today->text [[fmt "%Y-%m-%d"]]
   "Today's date (as text)."
   (.strftime (datetime.today) fmt))

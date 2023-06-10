@@ -13,8 +13,6 @@ Functions that produce lists of Document objects.
 (import itertools [chain repeat])
 (import multiprocessing [Pool cpu-count])
 
-; consider moving into the parallel loop after the fork
-; but transformers is imported by langchain
 (import transformers [LlamaTokenizerFast])
 
 (import langchain.document-loaders [TextLoader
@@ -50,6 +48,18 @@ Functions that produce lists of Document objects.
       splitter (RecursiveCharacterTextSplitter.from-huggingface-tokenizer
                  :tokenizer tokenizer
                  :chunk-size (config "storage" "chunk-size-tokens")))
+
+
+;;; -----------------------------------------------------------------------------
+;;; count ze tokenz: object.__repr__ -> int
+;;; -----------------------------------------------------------------------------
+
+(defn token-count [x]
+  "The number of tokens, roughly, of a chat history (or anything with a meaningful __repr__)."
+  (->> x
+       (str)
+       (tokenizer.encode)
+       (len)))
 
 ;;; -----------------------------------------------------------------------------
 ;;; functions to load documents from files : fname, ? -> Documents
@@ -124,27 +134,9 @@ Functions that produce lists of Document objects.
       (logging.error (repr e))
       [False])))
 
-(defn __parallel-load-files [root files]
-  "Internal, parallel mapping of file->docs Use dir->docs instead.
-   The number of worker threads is set as db.loader-threads in config.toml.
-   The default is the number of cpus."
-  ;;
-  ;; FIXME: parallel tokenizer;
-  ;; fast tokenizer parallel, disable since parallel at file level
-  ;;
-  ;; FIXME: This is slower than loading in serial.
-  ;;
-  (setv (get os.environ "TOKENIZERS_PARALLELISM") "false")
-  (let [f (partial __load-file-convenience root)
-        threads (or (config "storage" "loader-threads") (cpu-count))]
-    (with [p (Pool :processes threads)]
-      (->> (p.imap-unordered f files)
-           (chain.from-iterable)
-           (filter None)
-           (list)))))
-
 (defn __serial-load-files [root files]
   "Internal mapping of file->docs Use dir->docs instead."
+  ;; The fast tokenizer is already parallel, so slower to parallelise this
   (let [f (partial __load-file-convenience root)]
       (->> (map f files)
            (chain.from-iterable)

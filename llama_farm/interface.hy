@@ -28,18 +28,14 @@ Functions that relate to output on the screen.
 (defn clear []
   (console.clear))
   
-(defn _set-width [line]
+(defn set-width [line]
   (try
     (let [arg (get (.partition line " ") 2)]
       (global console)
-      (setv console (Console :highlight None :width (int arg)))
-      "")
+      (setv console (Console :highlight None :width (int arg))))
     (except [[IndexError ValueError]]
-      "[red]Bad console width value.[/red]")))
+      (error "Bad console width value."))))
 
-(defn set-width [line]
-  (console.print (_set-width line)))
-    
 (defn get-margin [chat-history]
   "Max over length of bot names, for use in chat formatting."
   (max 1 1 #* (lfor m chat-history (len (:bot m)))))
@@ -94,7 +90,7 @@ Functions that relate to output on the screen.
       (console.print "Chat history:" :style "green italic"))
     (console.print)
     (for [msg chat-history]
-      (print-message msg margin :padding #(0 4 1 0)))
+      (print-message msg margin :padding #(0 4 0 0)))
     (console.rule)))
 
 (defn print-markdown [s [style None] [padding #(0 3 0 0)]]
@@ -162,7 +158,6 @@ Functions that relate to output on the screen.
                   (Markdown (sanitize-markdown (:content msg)))
                   (:content msg)))
     (console.print output :justify "left")))
-    ;(console.print))) ; a gap after the reply makes it more readable
 
 (defn print-last-message [chat-history margin]
   (-> chat-history

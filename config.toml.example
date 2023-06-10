@@ -97,3 +97,6 @@ max_tokens = 300
 # tgwui clamps this to 2 😾
 temperature = 1000
 top_p = 0.1
+
+[bots.stultus]
+kind = "mock"

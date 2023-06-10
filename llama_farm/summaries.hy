@@ -31,23 +31,16 @@ Return:
 
 (import langchain.text-splitter [RecursiveCharacterTextSplitter])
 
+(import .documents [tokenizer token-count])
 (import .utils [config params tee])
-(import .guides [model text->summary text->points text->topic])
+(import .guides [model text->summary text->points text->topic text->extract])
+(import .texts [url->text youtube->text])
 (import .interface [info error status-line])
 
-
-(setv tokenizer (AutoTokenizer.from_pretrained (config "storage" "tokenizer")))
 
 ;;; -----------------------------------------------------------------------------
 ;;; Text handling and high-order functions
 ;;; -----------------------------------------------------------------------------
-
-(defn token-length [text]
-  "The length of the text in tokens."
-  (-> text
-      (tokenizer)
-      (:input-ids)
-      (len)))
 
 (defn fragment [text [chunk-size 1000]]
   "Split a long text into a list of paragraphs of max length."
@@ -77,13 +70,13 @@ Join them together at the end."
                         [reduction Inf]]
   "Summarize down to below specified token length by applying `f` recursively.
 Stop at maximum recursion depth or when the reduction ratio is inadequate."
-  (let [l (token-length text)]
-    (info f"recursion depth {depth}, reduction {reduction :4.2f}, {l} tokens -> {max-token-length}...")
+  (let [l (token-count text)]
+    ;(info f"recursion depth {depth}, reduction {reduction :4.2f}, {l} tokens -> {max-token-length}...")
     (if (and (> l max-token-length)
              (< depth max-depth)
              (> reduction 1.2))
         (let [reduced-text (reduce-oneshot f bot text)
-              reduced-length (token-length reduced-text)]
+              reduced-length (token-count reduced-text)]
           (reduce-recursive f bot reduced-text
                             :max-token-length max-token-length
                             :max-depth max-depth
@@ -119,6 +112,12 @@ Fall back to bullet points on failure, which seems more reliable."
       (:result ((text->topic) :input text :llm (model bot)))
       ""))
   
+(defn extract-fragment [query bot text]
+  "Extract relevant points from a piece of text that fits within the context length."
+  (if (.strip text)
+      (:result ((text->extract) :query query :input text :llm (model bot)))
+      ""))
+  
 ;;; -----------------------------------------------------------------------------
 ;;; Recursive reducers (for text beyond context length, using divide-and-conquer)
 ;;; -----------------------------------------------------------------------------
@@ -126,6 +125,14 @@ Fall back to bullet points on failure, which seems more reliable."
 (defn summarize [bot text [max-token-length 750] [max-depth 5]]
   "Recursively reduce to a summary paragraph."
   (reduce-recursive summarize-fragment
+                    bot
+                    text
+                    :max-token-length max-token-length
+                    :max-depth max-depth))
+
+(defn extract [bot text query [max-token-length 750] [max-depth 5]]
+  "Recursively extract points relevant to a query into a paragraph."
+  (reduce-recursive (partial extract-fragment query)
                     bot
                     text
                     :max-token-length max-token-length
@@ -147,6 +154,24 @@ Fall back to bullet points on failure, which seems more reliable."
 
 (defn topic [bot text [max-token-length 750] [max-depth 5]]
   "Recursively reduce to bullet points then determine a topic."
-  (->> text
-    (points bot :max-token-length max-token-length :max-depth max-depth)
-    (topic-fragment bot))) 
+  (.replace
+    (->> text
+      (points bot :max-token-length max-token-length :max-depth max-depth)
+      (topic-fragment bot))
+    "\n" " ")) 
+
+;;; -----------------------------------------------------------------------------
+;;; Summarize external sources
+;;; -----------------------------------------------------------------------------
+
+(defn summarize-youtube [bot youtube-id]
+  "Summarize a youtube video transcript (as text)."
+  (->> youtube-id
+       (youtube->text)
+       (summarize-hybrid bot :max-token-length (config "summary-chat-size"))))  
+
+(defn summarize-url [bot url]
+  "Summarize a webpage (as text)."
+  (->> url
+       (url->text)
+       (summarize-hybrid bot :max-token-length (config "summary-chat-size"))))  
