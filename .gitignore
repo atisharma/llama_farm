@@ -19,3 +19,4 @@ tags.temp
 config.toml
 llama-farm.log
 chat_history.json
+guidance.stderr
