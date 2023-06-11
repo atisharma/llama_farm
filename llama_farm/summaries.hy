@@ -95,27 +95,39 @@ Fall back to bullet points on failure, which seems more reliable."
       (try
         (:result ((text->summary) :input text :llm (model bot)))
         (except [ValueError]
-          (error "Summarization failed, trying points extraction.")
-          (error f"Input text: {text}")
+          (error "Summarization failed, trying points summarization.")
           (points-fragment bot text)))
       ""))
   
 (defn points-fragment [bot text]
   "Extract points from a piece of text that fits within the context length."
   (if (.strip text)
-      (:result ((text->points) :input text :llm (model bot)))
+      (try
+        (:result ((text->points) :input text :llm (model bot)))
+        (except [ValueError]
+          (error "Points summarization failed.")
+          ""))
       ""))
 
 (defn topic-fragment [bot text]
   "Extract the topic from a piece of text that fits within the context length."
   (if (.strip text)
-      (:result ((text->topic) :input text :llm (model bot)))
+      (try
+        (:result ((text->topic) :input text :llm (model bot)))
+        (except [ValueError]
+          (error "Topic summarization failed.")
+          ""))
       ""))
   
 (defn extract-fragment [query bot text]
   "Extract relevant points from a piece of text that fits within the context length."
   (if (.strip text)
-      (:result ((text->extract) :query query :input text :llm (model bot)))
+      (try
+        (:result ((text->extract) :query query :input text :llm (model bot)))
+        (except [ValueError]
+          (error "Extraction failed, trying summarization.")
+          (points-fragment bot text)
+          ""))
       ""))
   
 ;;; -----------------------------------------------------------------------------
@@ -174,4 +186,10 @@ Fall back to bullet points on failure, which seems more reliable."
   "Summarize a webpage (as text)."
   (->> url
        (url->text)
+       (summarize-hybrid bot :max-token-length (config "summary-chat-size"))))  
+
+(defn summarize-file [bot fname]
+  "Summarize a text file."
+  (->> fname
+       (slurp)
        (summarize-hybrid bot :max-token-length (config "summary-chat-size"))))  

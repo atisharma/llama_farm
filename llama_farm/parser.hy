@@ -37,10 +37,9 @@ either internally or to a chatbot / langchain.
 
 
 ;; TODO: status-line: history (tokens) | model | current-topic | current tool
-
 ;; TODO: remove global state for current topic and context.
 ;; TODO: manage state a bit more cleanly in this module
-;; TODO: move all spinners to this top level
+;; TODO: move all spinners to this top level -- a function decorator would be nice, that didn't clash with existing indicators
 
 (setv bot (config "bots" "default")
       current-topic ""
@@ -126,52 +125,69 @@ either internally or to a chatbot / langchain.
       ;;
       ;; commands that give a reply
       (= command "/ask") (chat.extend chat-history
-                                      #* (chat.over-db
-                                           bot
-                                           user-message
-                                           args
-                                           (inject system-prompt chat-history)
-                                           :db knowledge-store))
+                                      user-message
+                                      (chat.over-db bot
+                                                    user-message
+                                                    args
+                                                    (inject system-prompt chat-history)
+                                                    :db knowledge-store))
       (= command "/arxiv") (chat.extend chat-history
-                                        #* (chat.over-arxiv
-                                             bot
-                                             user-message
-                                             args
-                                             (inject system-prompt chat-history)))
+                                        user-message
+                                        (chat.over-arxiv bot
+                                                         user-message
+                                                         args
+                                                         (inject system-prompt chat-history)))
       (= command "/wikipedia") (chat.extend chat-history
-                                            #* (chat.over-wikipedia
-                                                 bot
-                                                 user-message
-                                                 args
-                                                 (inject system-prompt chat-history)))
+                                            user-message
+                                            (chat.over-wikipedia bot
+                                                                 user-message
+                                                                 args
+                                                                 (inject system-prompt chat-history)))
+      (= command "/file") (chat.extend chat-history
+                                       user-message
+                                       (chat.over-file bot
+                                                       user-message
+                                                       args
+                                                       (inject system-prompt chat-history)))
       (= command "/url") (chat.extend chat-history
-                                      #* (chat.over-url
-                                           bot
-                                           user-message
-                                           args
-                                           (inject system-prompt chat-history)))
+                                      user-message
+                                      (chat.over-url bot
+                                                     user-message
+                                                     args
+                                                     (inject system-prompt chat-history)))
       (= command "/youtube") (chat.extend chat-history
-                                          #* (chat.over-youtube
-                                               bot
-                                               user-message
-                                               args
-                                               (inject system-prompt chat-history)))
+                                          user-message
+                                          (chat.over-youtube bot
+                                                             user-message
+                                                             args
+                                                             (inject system-prompt chat-history)))
       ;;
       ;; summarization
+      (= command "/summ-file") (try
+                                 (chat.extend chat-history
+                                              user-message
+                                              (chat.over-summarize-file bot
+                                                                        user-message
+                                                                        args
+                                                                       (inject system-prompt chat-history)))
+                                 (except [e [MissingSchema ConnectionError]]
+                                   (error f"I can't get anything from [{args}]({args})")))
       (= command "/summ-url") (try
                                 (chat.extend chat-history
-                                             #* (chat.over-summarize-url bot
-                                                                       user-message
-                                                                       args
-                                                                       (inject system-prompt chat-history)))
+                                             user-message
+                                             (chat.over-summarize-url bot
+                                                                      user-message
+                                                                      args
+                                                                      (inject system-prompt chat-history)))
                                 (except [e [MissingSchema ConnectionError]]
                                   (error f"I can't get anything from [{args}]({args})")))
       (= command "/summ-youtube") (try
                                     (chat.extend chat-history
-                                                 #* (chat.over-summarize-youtube bot
-                                                                                    user-message
-                                                                                    args
-                                                                                    (inject system-prompt chat-history)))
+                                                 user-message
+                                                 (chat.over-summarize-youtube bot
+                                                                              user-message
+                                                                              args
+                                                                              (inject system-prompt chat-history)))
                                     (except [TranscriptsDisabled]
                                       (error f"I can't find a transcript for [{args}](https://www.youtube.com/watch/?v={args})")))
       ;;

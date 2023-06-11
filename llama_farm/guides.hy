@@ -33,7 +33,20 @@ DATA MODEL
 (import uuid [uuid4])
 (import itertools)
 
+(import sys)
+
 (import guidance)
+;; horrible hack for https://github.com/microsoft/guidance/issues/219
+(defn print-to-stderr [#* args #** kwargs]
+  "Print to stderr unless specified."
+  (with [log-file (open "guidance.stderr" "w")]
+    (let [file (.pop kwargs "file" log-file)]
+      (print #* args
+             :file log-file
+             #** kwargs))))
+(setv guidance._program-executor.print print-to-stderr)
+(setv guidance._program.print print-to-stderr)
+
 (import lorem)
 
 (import llama-farm [tools texts])
@@ -49,7 +62,7 @@ DATA MODEL
         (guidance.llms.OpenAI (:model-name p "gpt-3.5-turbo")
                               :api-key (:openai-api-key p "n/a")
                               :api-base (:openai-api-base p (:url p None))
-                              :temperature (:temperature p 0.0)
+                              :temperature (:temperature p 0.5)
                               :api-type "open_ai")
         (guidance.llms.Mock (lorem.get-word :count 200))))) 
     
@@ -109,7 +122,7 @@ DATA MODEL
     (ncat (system "Your sole purpose is to express the topic of conversation in one short sentence.")
           (chat->guidance chat)
           (user "Summarize the topic of conversation so far in about ten words.")
-          (assistant "{{gen 'result' temperature=0}}"))))
+          (assistant "{{gen 'result'}}"))))
 
 (defn chat->points [chat]
   "Guidance program to create bullet points from chat history."
@@ -118,7 +131,7 @@ DATA MODEL
       (system "Your sole purpose is to summarize the conversation into bullet points.")
       (chat->guidance chat)
       (user "Summarize this chat so far as a list of bullet points, preserving the most interesting, pertinent and important points. Write only bullet points, with no padding text.")
-      (assistant "{{gen 'result' temperature=0}}"))))
+      (assistant "{{gen 'result'}}"))))
 
 (defn chat->summary [chat]
   "Guidance program to create summary from chat history."
@@ -127,7 +140,7 @@ DATA MODEL
       (system "You are a helpful assistant who follows instructions carefully.")
       (chat->guidance chat)
       (user "Please edit down the conversation so far into a single concise paragraph, preserving the most interesting, pertinent and important points.")
-      (assistant "{{gen 'result' temperature=0}}"))))
+      (assistant "{{gen 'result'}}"))))
 
 ;;; -----------------------------------------------------------------------------
 ;;; Applications of guidance to paragraphs of text
@@ -141,7 +154,7 @@ DATA MODEL
       (user "Please express the topic of the following text in less than 10 words:
 
 {{input}}")
-      (assistant "{{gen 'result' temperature=0}}"))))
+      (assistant "{{gen 'result'}}"))))
 
 (defn text->points []
   "Guidance program to create bullet points from text."
@@ -149,24 +162,24 @@ DATA MODEL
     (ncat
       ;(system "Your sole purpose is to summarize text into bullet points.")
       (system "You are a helpful assistant who follows instructions carefully.")
-      (user "Summarize the following text as a list of bullet points, preserving the most interesting, pertinent and important points. Remove legal disclaimers and advertising.
+      (user "Summarize the following text as a list of bullet points, preserving the most interesting, pertinent and important points. Remove legal disclaimers and advertising. If there is no relevant information, reply with '[removed]'.
 
 {{input}}
 
 Write only bullet points, with no padding text.")
-      (assistant "{{gen 'result' temperature=0}}"))))
+      (assistant "{{gen 'result'}}"))))
 
 (defn text->summary []
   "Guidance program to create short summary from text."
   (guidance
     (ncat
       (system "You are a helpful assistant who follows instructions carefully.")
-      (user "Please concisely rewrite the following text, preserving the most interesting, pertinent and important points. Remove legal disclaimers and advertising.
+      (user "Please concisely rewrite the following text, preserving the most interesting, pertinent and important points. Remove legal disclaimers and advertising. If there is no relevant information, reply with '[removed]'.
 
 {{input}}
 
 ")
-      (assistant "{{gen 'result' temperature=0}}"))))
+      (assistant "{{gen 'result'}}"))))
 
 (defn text->extract []
   "Guidance program to extract points relevant to a query from text."
@@ -174,12 +187,12 @@ Write only bullet points, with no padding text.")
     (ncat
       (system "You are a helpful assistant who follows instructions carefully.")
       (user "{{query}}
-Please concisely rewrite the following text, extracting the points most interesting, pertinent and important to the preceding question.
+Please concisely rewrite the following text, extracting the points most interesting, pertinent and important to the preceding question. Don't invent information. If there is no relevant information, reply with '[removed]'.
 
 {{input}}
 
 ")
-      (assistant "{{gen 'result' temperature=0}}"))))
+      (assistant "{{gen 'result'}}"))))
 
 ;;; -----------------------------------------------------------------------------
 ;;; Applications of guidance to combined text and chat
@@ -193,9 +206,10 @@ The text should not be so long as to cause context length problems, so summarise
     (ncat (chat->guidance chat)
           (user "{{query}}
 
-Consider the following context before responding:
-
-{{input}}")
+Consider the following additional context before responding:
+<context>
+{{input}}
+</context>")
           (assistant "{{gen 'result'}}"))))
 
 (defn use-tools->reply [#* tools]
@@ -294,4 +308,3 @@ If it cannot be completed, return an error code.")
   "Given an executed task, determine if a task should be marked as completed
 or marked for another attempt at execution.
 If it has failed multiple times, return an error code.")
-

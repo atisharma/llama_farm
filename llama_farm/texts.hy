@@ -20,6 +20,17 @@ This module provides functions that generate strings from a variety of sources.
 (import youtube_transcript_api.formatters [TextFormatter])
 
 
+(defn youtube-meta->text [youtube-id]
+  "Return the title and source of the youtube video."
+  (let [url f"https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={youtube-id}&format=json"
+        response (.get requests url)]
+    (if response.ok
+        (let [data (.json response)
+              title (:title data "No title provided")
+              author (:author-name data "No author provided")]
+          f"Title: {title}\nAuthor: {author}")
+        (.raise_for_status response))))
+
 (defn youtube->text [youtube-id [punctuate False]]
   "Load (and optionally punctuate) youtube transcript as text.
    Youtube 'transcripts' are normally just a long list of words with no
@@ -33,22 +44,14 @@ This module provides functions that generate strings from a variety of sources.
         avail-transcripts (.list-transcripts YouTubeTranscriptApi youtube-id)
         transcript (.fetch (.find-transcript avail-transcripts languages))
         formatter (TextFormatter)
-        text (.format_transcript formatter transcript)]
+        text (.format_transcript formatter transcript)
+        meta-info (youtube-meta->text youtube-id)]
     (if punctuate
         (do
           ; import here because not everyone will want to spend the VRAM.
           (import deepmultilingualpunctuation [PunctuationModel])
           (.restore-punctuation (PunctuationModel) text))
-        text)))
-
-(defn youtube-title->text [youtube-id]
-  "Return the title of the youtube video."
-  (let [url f"https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={youtube-id}&format=json"
-        response (.get requests url)]
-    (if response.ok
-        (let [data (.json response)]
-          (:title data "No title provided"))
-        (.raise_for_status response))))
+        (.join "\n" [meta-info text]))))
 
 (defn url->text [url]
   "Fetch a URL's content as cleaned markdown text."
@@ -61,6 +64,8 @@ This module provides functions that generate strings from a variety of sources.
         (cleaner.clean_html)
         (lxml.html.tostring)
         (markdownify :heading-style "ATX" :strip "style"))))
+
+;; TODO: full text of a single arXiv paper - maybe just chat over file?
 
 (defn arxiv->text [topic [n 12]]
   "Get relevant arxiv summaries on a topic (as text)."

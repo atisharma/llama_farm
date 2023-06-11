@@ -1,12 +1,12 @@
 import hy
 import sys
+
 from .repl import run
 
 if __name__ == "__main__":
-  sys.exit(run() or 0)
+ sys.exit(run() or 0)
 
-
-# to capture stderr, which didn't turn out to be useful...
+# to capture stderr
 
 #import os
 #from contextlib import contextmanager
@@ -22,7 +22,7 @@ if __name__ == "__main__":
 #
 #if __name__ == "__main__":
 #  # Redirect stderr to a log file
-#  with open('/tmp/llama_farm.stderr', 'w') as log_file:
+#  with open('llama_farm.stderr', 'w') as log_file:
 #      with redirect_stderr(log_file):
 #          sys.exit(run() or 0)
-
+#

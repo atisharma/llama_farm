@@ -5,15 +5,18 @@ Functions that return messages or are associated with chat management.
 (require hyrule.argmove [-> ->> as->])
 (require hyrule.control [unless])
 
+(import shlex)
+
 (import llama-farm [store guides summaries])
 (import .state [chat-store knowledge-store])
 (import .documents [tokenizer token-count chat->docs])
 (import .utils [config params file-append slurp format-docs format-chat-history inject msg user system])
-(import .texts [now->text youtube-title->text wikipedia->text url->text youtube->text])
+(import .texts [now->text youtube-meta->text wikipedia->text url->text youtube->text])
 (import .interface [get-margin
                     print-message
                     print-sources
-                    spinner-context])
+                    spinner-context
+                    error])
 
 ;;; -----------------------------------------------------------------------------
 ;;; chat management
@@ -86,8 +89,12 @@ Functions that return messages or are associated with chat management.
   (with [c (spinner-context f"{(.capitalize bot)} is thinking...")]
     (let [model (guides.model bot)
           program (guides.chat->reply chat-history user-message system-prompt)
-          output (program :llm model)
-          reply (:result output)]
+          output (try
+                   (program :llm model)
+                   (except [ValueError]
+                     (error f"Null response from {(.capitalize bot)}.")
+                     {}))
+          reply (:result output "")]
       (msg "assistant" reply bot))))
 
 ;; TODO: call tools if appropriate
@@ -96,8 +103,12 @@ Functions that return messages or are associated with chat management.
   (with [c (spinner-context f"{(.capitalize bot)} is thinking...")]
     (let [model (guides.model bot)
           program (guides.text&chat->reply chat-history)
-          output (program :query (:content user-message) :input text :llm model)
-          reply (:result output)]
+          output (try
+                   (program :query (:content user-message) :input text :llm model)
+                   (except [ValueError]
+                     (error f"Null response from {(.capitalize bot)}.")
+                     {}))
+          reply (:result output "")]
       (msg "assistant" reply bot))))
 
 ;;; -----------------------------------------------------------------------------
@@ -107,7 +118,7 @@ Functions that return messages or are associated with chat management.
 ;; TODO: abstract out boilerplate here
 
 (defn over-text [bot user-message args chat-history * text] ; -> print, msg
-  "Chat over some text."
+  "Chat over some text. Print the reply message and return it."
   (let [margin (get-margin chat-history)
         truncation-length (:truncation-length (params bot) 1800)
         max-tokens (:max-tokens (params bot) 750)
@@ -119,9 +130,9 @@ Functions that return messages or are associated with chat management.
                      (summaries.extract bot text query :max-token-length spare-tokens))
         reply-msg (reply-over-text bot chat-history user-message short-text)]
     (print-message reply-msg margin)
-    [{#** user-message "content" f"[Query] {args}"} reply-msg]))
+    reply-msg))
 
-(defn over-docs [bot user-message args chat-history * docs] ; -> print, msg
+(defn over-docs [bot user-message args chat-history * docs]
   "Chat over a set of documents."
   (let [text (format-docs docs)]
     (over-text bot user-message args chat-history :text text)))
@@ -135,6 +146,12 @@ Functions that return messages or are associated with chat management.
   (let [[topic _ query] (.partition args " ")
         text (wikipedia->text topic)]
     (over-text bot user-message args chat-history :text text)))
+
+(defn over-file [bot user-message args chat-history]
+  (let [[fname rest-args] (shlex.split args)
+        query (.join " " rest-args)
+        text (slurp fname)]
+    (over-text bot user-message query chat-history :text text)))
 
 (defn over-arxiv [bot user-message args chat-history]
   (let [[topic _ query] (.partition args " ")
@@ -153,22 +170,29 @@ Functions that return messages or are associated with chat management.
         text (youtube->text youtube-id)]
     (over-text bot user-message args chat-history :text text)))
   
-;; TODO: do one for a file reader here
+(defn over-summarize-file [bot user-message fname chat-history]
+  "Summarize a URL."
+  (with [c (spinner-context f"{(.capitalize bot)} is summarizing...")]
+    (let [margin (get-margin chat-history)
+          summary (summaries.summarize-fname bot fname)]
+      (let [reply-msg (msg "assistant" f"{summary}" bot)]
+        (print-message reply-msg margin)
+        [{#** user-message "content" f"Summarize {fname}"} reply-msg]))))
+
 (defn over-summarize-url [bot user-message url chat-history]
   "Summarize a URL."
   (with [c (spinner-context f"{(.capitalize bot)} is summarizing...")]
     (let [margin (get-margin chat-history)
-          summary (summaries.summarize-url bot url)]
-      (let [reply-msg (msg "assistant" f"{summary}" bot)]
-        (print-message reply-msg margin)
-        [{#** user-message "content" f"Summarize the webpage {url}"} reply-msg]))))
+          summary (summaries.summarize-url bot url)
+          reply-msg (msg "assistant" f"{summary}" bot)]
+      (print-message reply-msg margin)
+      reply-msg)))
 
 (defn over-summarize-youtube [bot user-message youtube-id chat-history]
   "Summarize a Youtube video (transcript)."
   (with [c (spinner-context f"{(.capitalize bot)} is summarizing...")]
-    (let [title (youtube-title->text youtube-id)
-          margin (get-margin chat-history)
-          summary (summaries.summarize-youtube bot youtube-id)]
-      (let [reply-msg (msg "assistant" f"###{title}\n{summary}" bot)]
-        (print-message reply-msg margin)
-        [{#** user-message "content" f"Summarize the Youtube video [{youtube-id}](https://www.youtube.com/watch?v={youtube-id})"} reply-msg]))))
+    (let [margin (get-margin chat-history)
+          summary (summaries.summarize-youtube bot youtube-id)
+          reply-msg (msg "assistant" summary bot)]
+      (print-message reply-msg margin)
+      reply-msg)))
