@@ -76,11 +76,20 @@ Functions that return messages or are associated with chat management.
     (summaries.topic bot chat-text)))
 
 (defn extend [chat-history #* msgs]
-  "Simply append the new messages to the chat history, log the change,
-   and return it."
+  "Simply append the new messages to the chat history, log the change, and return it.
+Also, speech grafted in here (experimental)."
+  ;; TODO: put speech somewhere more sensible
   (for [msg msgs]
     (.append chat-history msg)
-    (file-append msg (config "chatlog")))
+    (file-append msg (config "chatlog"))
+    (when (and (config "speech")
+               (= "assistant" (:role msg)))
+      (import .speech [bark])
+      (let [bot (:bot msg)
+            voice (:voice (params bot) "v2/en_speaker_0")
+            text (:content msg)]
+        (with [c (spinner-context f"{(.capitalize bot)} is speaking..." :style "italic orange4")]
+          (bark text :voice voice)))))
   chat-history)
 
 ;; TODO: call tools if appropriate

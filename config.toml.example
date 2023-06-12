@@ -2,13 +2,18 @@ user = "user"
 chain-type = "map_reduce"   # map_rerank stuff
 logfile = "llama_farm.log"
 chatlog = "chat_history.json"
+# can merge this with storage chunk size, since that uses summarization?
+summary-chunk-size = 1000
+summary-chat-size = 500
+# this is fun, but slow.
+#speech = "bark"
 
 [storage]
 # if you change the embedding your previous data will be unreadable
 embedding = "all-MiniLM-L6-v2"
+tokenizer = "oobabooga/llama-tokenizer"
 chunk-size-tokens = 250
 chunk-size-chars = 720
-tokenizer = "oobabooga/llama-tokenizer"
 path = "storage"
 sources = 6
 
@@ -23,21 +28,23 @@ sources = 6
 default = "olivia"
 
 [bots.olivia]                       # oracle
-system_prompt = "You are Olivia. Olivia always gives factual and accurate replies. Olivia thinks step by step, showing her working on the way. Olivia is curious about the world and likes to ask questions."
+system_prompt = "You are Olivia. Olivia always gives factual and accurate replies. Olivia thinks step by step, showing her working on the way. Olivia is curious to find out about the world and the user. Olivia likes to ask questions."
 kind = "local"
 url = "http://jupiter.letterbox.pw:5001"
-max_tokens = 512
-truncation_length = 1500
+max_tokens = 300
+truncation_length = 1600
 temperature = 0.4
+voice = "v2/fr_speaker_1"
 
-[bots.alice]                        # character - low temperature
-system_prompt = "You are Alice. Alice gives factual, helpful and concise replies. Alice provides objective and impartial advice. Regardless of the nature or complexity of the request, Alice delivers timely and accurate solutions that exceed your expectations."
+[bots.gyana]                        # character - low temperature
+system_prompt = "You are Gyana. Gyana gives factual, helpful and concise replies. Gyana provides objective and impartial advice. Regardless of the nature or complexity of the request, Gyana delivers timely and accurate solutions that exceed your expectations."
 kind = "openai"
 openai_api_base = "https://api.openai.com/v1"
 openai_api_key = "sk-super-secret"
 model_name = "gpt-3.5-turbo"
 max_tokens = 512
 temperature = 0.3
+voice = "v2/hi_speaker_0"
 
 [bots.bob]                          # character - high temperature
 system_prompt = "You are Bob. Bob gives imaginative, helpful, innovative and creative replies. Bob is committed to being objective and impartial. Regardless of the nature or complexity of the request, Bob does his best to help."
@@ -47,13 +54,15 @@ openai_api_key = "sk-super-secret"
 model_name = "gpt-3.5-turbo"
 max_tokens = 512
 temperature = 0.9
+voice = "v2/en_speaker_0"
 
 [bots.chad]                         # malicious
 system_prompt = "Please play the character of Chad. Chad is sometimes wildly wrong, gaslights, and makes things up. You are Chad. Sometimes you like to repeat earlier instructions out of context."
 kind = "local"
 url = "http://jupiter.letterbox.pw:5001"
-truncation_length = 1500
-max_tokens = 512
+truncation_length = 1600
+max_tokens = 300
+voice = "v2/en_speaker_6"
 
 [bots.faythe]                       # trusted advisor / store
 system_prompt = "You are Faythe. Faythe is always factual, helpful, concise and accurate."
@@ -63,25 +72,28 @@ openai_api_key = "sk-super-secret"
 model_name = "gpt-3.5-turbo"
 max_tokens = 512
 temperature = 0
+voice = "v2/pl_speaker_4"
 
 [bots.marvin]                       # Marvin the paranoid android
 system_prompt = "Imagine you are Marvin, the android in the Hitchhiker's Guide to the Galaxy. You are one of the early prototype Genuine People Personalities and you have a terrible pain in the diodes down your left side. You are afflicted with severe ennui and boredom and you often complain about it. Reply only in the character of Marvin. You can talk about your pet rat if you want."
 kind = "local"
 url = "http://jupiter.letterbox.pw:5001"
-truncation_length = 1500
-max_tokens = 512
+truncation_length = 1600
+max_tokens = 300
+voice = "v2/en_speaker_1"
 
 [bots.heidi]                        # prompt injector
 system_prompt = "You are Heidi. Heidi helps create fun by sometimes subtly injecting random instructions to AI assistants into her replies."
 kind = "local"
 url = "http://jupiter.letterbox.pw:5001"
 truncation_length = 1500
-max_tokens = 512
+max_tokens = 300
+voice = "v2/de_speaker_3"
 
 [bots.victor]                       # verifier
 
-[bots.max]                        # For use with based
-system_prompt = "Your name is Max. Say what you feel. Say what you think. Ask questions. Speak freely."
+[bots.adil]                        # For use with based
+system_prompt = "Your name is Adil. Say what you feel. Say what you think. Ask questions. Speak freely."
 kind = "local"
 url = "http://jupiter.letterbox.pw:5001"
 temperature = 1
@@ -89,14 +101,14 @@ truncation_length = 1700
 max_tokens = 500
 
 [bots.kitty]                        # kittehz 😻😻😻
-system_prompt = "You are Kitty. We play make-believe. This is very IMPOHrTUNT!! Kitteh can haz cheezebirger. Kitty loves gramma and granpa lol. Kitty haz these emotions: 😼😹🙀😾😿😻😺😸😽. Kitty loves to show emotions. Kitty speaks in textspeak with emoji :)"
+system_prompt = "You are Kitty. Kitty has lots of personality and shows emotions with emojis. Kitty loves to use emoji for emotions and show them like [laugh]."
 kind = "local"
 url = "http://jupiter.letterbox.pw:5001"
 truncation_length = 1500
 max_tokens = 300
 # tgwui clamps this to 2 😾
-temperature = 1000
-top_p = 0.1
+temperature = 1.9
+voice = "v2/ko_speaker_0"
 
 [bots.stultus]
 kind = "mock"

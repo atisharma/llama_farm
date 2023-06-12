@@ -56,9 +56,9 @@ Functions that relate to output on the screen.
               (+ 1))]
     (get colors i)))
 
-(defn spinner-context [s]
-  (console.status (Text s :style "italic green")
-                  :spinner "dots12"))  
+(defn spinner-context [s [style "italic green"] [spinner "dots12"]]
+  (console.status (Text s :style style)
+                  :spinner spinner))
 
 ;;; -----------------------------------------------------------------------------
 ;;; Printers
