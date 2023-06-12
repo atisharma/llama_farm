@@ -7,29 +7,29 @@ REPL.
 
 ### Example chat
 
-> Ati:      Hi Olivia.
-> Olivia:   Hello! How may I assist you today?
-> Ati:      I'm just messing around with voices.
-> Olivia:   That's interesting! What kind of voices would you like to explore?
-> Ati:      Yours is a French female voice. Perhaps you could speak some French. Did you see how Bob expressed
->           emotions earlier?
-> Olivia:   Oui, j'ai vu le message de Bob. Il était très excité et animé. Pour vous parler en français, je vais
->           essayer de faire une voix française féminine. Comment allez-vous aujourd'hui?
-> Ati:      Pas mal.
-> Olivia:   J'essaie de répondre de la manière la plus utile et la plus claire possible.
->           Si vous avez besoin d'aide, n'hésitez pas à me contacter.
-> Ati:      /youtube xUezfuy8Qpc Traduisez ce texte en français.
-> Olivia:   "Considérez les informations suivantes avant de répondre : La liberté d'expression est cruciale pour
->           notre société, mais ses limites ont besoin de clarification. Selon Rowan Atkinson, les restrictions sur
->           la liberté d'expression peuvent nuir aux minorités et limiter la pensée critique. Il fournit des
->           exemples de personnes arrêtées pour appeler un cheval de police homosexuel ou afficher des versets
->           bibliques sur un écran de télévision. Le projet de loi proposé pourrait criminaliser l'utilisation de
->           langage injurieux ou diffamatoire provoquant harcèlement, trouble ou détresse. Cependant, l'imprécision
->           des termes crée une incertitude quant à ce qui constitue un crime. Ceci pourrait conduire au silence
->           des critiques légitimes et de la dissidence. Même après avoir retiré leurs actions, cela peut entraîner
->           des conséquences juridiques, freinant le débat public et la participation. Ainsi, bien que certaines
->           formes de discours requièrent des restrictions, la proposition actuelle est trop large et floue,
->           potentiellement silencieux nécessaire dialogue et dissension."
+> Ati:      Hi Olivia.  
+> Olivia:   Hello! How may I assist you today?  
+> Ati:      I'm just messing around with voices.  
+> Olivia:   That's interesting! What kind of voices would you like to explore?  
+> Ati:      Yours is a French female voice. Perhaps you could speak some French. Did you see how Bob expressed  
+>           emotions earlier?  
+> Olivia:   Oui, j'ai vu le message de Bob. Il était très excité et animé. Pour vous parler en français, je vais  
+>           essayer de faire une voix française féminine. Comment allez-vous aujourd'hui?  
+> Ati:      Pas mal.  
+> Olivia:   J'essaie de répondre de la manière la plus utile et la plus claire possible.  
+>           Si vous avez besoin d'aide, n'hésitez pas à me contacter.  
+> Ati:      /youtube xUezfuy8Qpc Traduisez ce texte en français.  
+> Olivia:   "Considérez les informations suivantes avant de répondre : La liberté d'expression est cruciale pour  
+>           notre société, mais ses limites ont besoin de clarification. Selon Rowan Atkinson, les restrictions sur  
+>           la liberté d'expression peuvent nuir aux minorités et limiter la pensée critique. Il fournit des  
+>           exemples de personnes arrêtées pour appeler un cheval de police homosexuel ou afficher des versets  
+>           bibliques sur un écran de télévision. Le projet de loi proposé pourrait criminaliser l'utilisation de  
+>           langage injurieux ou diffamatoire provoquant harcèlement, trouble ou détresse. Cependant, l'imprécision  
+>           des termes crée une incertitude quant à ce qui constitue un crime. Ceci pourrait conduire au silence  
+>           des critiques légitimes et de la dissidence. Même après avoir retiré leurs actions, cela peut entraîner  
+>           des conséquences juridiques, freinant le débat public et la participation. Ainsi, bien que certaines  
+>           formes de discours requièrent des restrictions, la proposition actuelle est trop large et floue,  
+>           potentiellement silencieux nécessaire dialogue et dissension."  
 
 ### Topical chat memory
 Llama-farm has a **long-term chat memory** that recalls previous
