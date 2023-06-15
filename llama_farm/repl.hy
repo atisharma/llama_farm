@@ -62,7 +62,7 @@ it, and passes it to the appropriate action."
           (print)
           (error "**/quit** to exit"))
         (except [e [Exception]]
-          (with [f (open fname :mode "w" :encoding "UTF-8")]
+          (with [f (open "traceback.log" :mode "w" :encoding "UTF-8")]
             (import traceback)
             (traceback.print-exception e :file f))
           (exception))))
