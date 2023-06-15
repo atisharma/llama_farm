@@ -56,6 +56,8 @@ Return:
 (defn reduce-oneshot [f bot text]
   "Split a text into fragments and reduce each part by applying `f`.
 Join them together at the end."
+  ; TODO: consider injecting summary of previous fragment as context.
+  ; TODO: consider per-bot chunk size derived from context length limit
   (let [reducer (partial f bot)
         chunk-size (config "summary-chunk-size")]
     (->> text

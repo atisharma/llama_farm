@@ -23,17 +23,18 @@ Critical thinking:
 DATA MODEL
 
 * message
-  - a dict, `{\"role\" role \"bot\" bot-name \"content\" text-content}`
+  - a dict, `{\"role\" role
+              \"bot\" bot-name
+              \"content\" text-content}`
 * chat history
   - a list of messages
 * text
   - a string
 "
 
-(import uuid [uuid4])
 (import itertools)
-
 (import sys)
+(import json)
 
 (import guidance)
 ;; horrible hack for https://github.com/microsoft/guidance/issues/219
@@ -49,13 +50,14 @@ DATA MODEL
 
 (import lorem)
 
-(import llama-farm [tools texts])
+(import llama-farm [texts])
 (import .tool-parser [describe command-parse])
 (import .utils [params config])
 
 
 (defn model [bot]
   "Return a model instance based on the model name only."
+  ; TODO: implement a human-input model
   (let [p (params bot)]
     (if (in (.lower (:kind p "mock"))
             ["openai" "local"])
@@ -65,7 +67,6 @@ DATA MODEL
                               :temperature (:temperature p 0.5)
                               :api-type "open_ai")
         (guidance.llms.Mock (lorem.get-word :count 200))))) 
-    
 
 ;;; -----------------------------------------------------------------------------
 ;;; Utility functions
@@ -94,7 +95,7 @@ DATA MODEL
 
 (defn ncat [#* args [on "\n"]]
   "Join a bunch of strings on newline char (or whatever)."
-  (.join on args)) 
+  (.join on (filter None args))) 
 
 (defn chat->guidance [chat]
   "Put chat history in guidance string format."
@@ -198,7 +199,6 @@ Please concisely rewrite the following text, extracting the points most interest
 ;;; Applications of guidance to combined text and chat
 ;;; -----------------------------------------------------------------------------
 
-;; TODO: use something like this for chat over yt etc
 (defn text&chat->reply [chat]
   "Guidance program to respond in the context of the chat and some text.
 The text should not be so long as to cause context length problems, so summarise it first if necessary."
@@ -212,34 +212,75 @@ Consider the following additional context before responding:
 </context>")
           (assistant "{{gen 'result'}}"))))
 
-(defn use-tools->reply [#* tools]
-  "Guidance program to respond to a query with tools available."
-  (guidance
-    (ncat (system (ncat "You are a helpful, concise assistant who follows instructions carefully."
-                        f"Today's date and time is {(texts.now->text)}."
-                        "For information since 2020 and what you don't know, use tools."
-                        "You have the following tools available."
-                        #* (map describe tools)
-                        :on "\n\n"))
-          (user "Use the tools to get information relevant to the following prompt, supplying any parameters. Do not respond with anything else. Do not invent new tools or show examples. You may nest / substitute calls to tools.
-Your prompt is:
+;;; -----------------------------------------------------------------------------
+;;; Use of tools with guidance
+;;; -----------------------------------------------------------------------------
 
-{{query}}")
-          (assistant "{{gen 'result'}}"))
-    #** (dfor t tools t.__name__ t) :command-parse command-parse))
+(defn tools? [#* tools]
+  "Guidance program to respond to a query with a list of suitable tools available."
+  (guidance
+    (ncat
+      (system (ncat "You are a helpful, concise assistant who follows instructions carefully."
+                   f"Today's date and time is {(texts.now->text)}."
+                   "For information since 2020 and what you don't know, use the following tools.\n"
+                   (ncat #* (map describe tools) :on "\n\n")))
+      (user (ncat "Give all data variables that you will require to respond the query below."
+                  "Respond with a list of the most pertinent variables, like:"
+                  "( \"var-a\" \"var-b\" )"
+                  "Do not respond to the query yet."
+                  "=== QUERY ==="
+                  "{{query}}."
+                  "==="))
+      (assistant "{{gen 'data'}}")
+      (user (ncat "Give a list of the most pertinent tools calls that you will require to respond to the query, like."
+                  "( \"foo\", \"bar\" )"
+                  "Do not respond to the query yet."))
+      (assistant "{{gen 'result'}}"))
+    #** (dfor t tools t.__name__ t)))
+
+; seems to work OK
+; it might be easier just to let it execute python code in a venv.
+(defn query->tools [#* tools]
+  "Guidance program to use tools to get relevant info."
+  (guidance
+    (ncat (system (ncat "You are a helpful assistant who follows instructions carefully. You write only concise, minimal code. Where you cannot answer, you say 'no answer'."
+                        f"Today's date and time is {(texts.now->text)}."
+                        "For data since 2020 and what you don't know, use the following tools.\n"
+                        (ncat #* (map describe tools) :on "\n\n")))
+          (user (ncat "The query is:\n"
+                      "{{query}}\n"
+                      "Give a list only the pertinent data variables that you will require to respond the query above."
+                      "Then, give a list only the pertinent tools names that you will require to respond the query."
+                      "Respond with nothing else but the minimal lists of variables, then tools. Do not respond to the query itself yet."))
+          (assistant "{{gen 'plan'}}")
+          (user "Finally, to get the information that answers the query, apply the tools to the variables to make expressions which I will execute. You only have the tools shown earlier. Do not show examples. Do not respond to the query yet.")
+          (assistant "{{gen 'program'}}"))
+    #** (dfor t tools t.__name__ t)))
+
+(defn extract-json []
+  "Guidance program to extract json."
+  (guidance
+    (ncat (system (ncat "You are a helpful and concise assistant who follows instructions carefully."
+                        "You respond only in JSON strings complying with RFC 7159."
+                        "Your purpose is to extract valid json from provided input."))
+          (user "{{input}}")
+          (assistant "{{gen 'result'}"))))
 
 ;;; -----------------------------------------------------------------------------
 ;;; Applications of guidance to logic and reasoning
 ;;; -----------------------------------------------------------------------------
 
-(defn polya []
+(defn polya [#* tools]
   "Apply a problem-solving approach to a puzzle, inspired by Polya's method."
   ;; ask it for the square root of pi.
   (guidance
-    (ncat (system "You are a helpful, intelligent assistant who follows instructions carefully. You proceed step by step.")
+    (ncat (system (ncat "You are a helpful, intelligent assistant who follows instructions carefully. You proceed step by step."
+                        "For data since 2020 and what you don't know, use tools."
+                        "You have the following tools available.\n"
+                        (ncat #* (map describe tools) :on "\n\n")))
           (user "Consider the following problem:
 
-{{problem}}
+{{query}}
 
 State the problem according to your understanding, taking care to list the unknown, the data, the constraints and conditions. You may wish to mention similar problems and their methods of solution. Make approximations if necessary.")
           (assistant "{{gen 'problem'}}") 
@@ -250,61 +291,104 @@ State the problem according to your understanding, taking care to list the unkno
           (user "Review your solution to check if it is correct. Does it satisfy the conditions, use all the data, and solve the original problem? Identify any mistakes or problems with the solution.")
           (assistant "{{gen 'review'}}") 
           (user "State your final solution to the original problem.")
-          (assistant "{{gen 'solution'}}")))) 
+          (assistant "{{gen 'result'}}")) 
+    #** (dfor t tools t.__name__ t)))
 
 ;;; -----------------------------------------------------------------------------
 ;;; Applications of guidance to task management
 ;;; -----------------------------------------------------------------------------
 
-;; FIXME: TODO: finish task handling and planning
-;; TASK: json task description
-;; Can the task be executed without splitting it into subtasks, with the tools available?
-;; Can the task be split into simpler tasks?
-;; Split the task into a list of subtasks.
-;; Complete the following task, with the tools available. Return the result in the task template.
-;; Complete the following task, with the tools available.
+(defn format-task [task]
+  (let [task-to-print (.copy task)]
+    (.pop task-to-print "subtasks" None)
+    (.pop task-to-print "assigned" None)
+    (json.dumps task-to-print :indent 4)))
 
-(setv task-examples [
-                     {"id" (uuid4)
-                      "parent_id" (uuid4)
-                      "object_type" "task"
-                      "objective" "Teach the world to sing."
-                      "tools" ["tool1" "tool2" "tool3"]}])
+(defn manage-task [] ; -> "DIVIDE", "ATTEMPT", "ESCALATE", "REVISE", "ABANDON", "ACCEPT"
+  "Determine if a task should be split into subtasks, attempted, revised, or abandoned."
+  (guidance
+    (ncat
+      (system "Your purpose is to determine the appropriate action for a task, keeping in mind the overall objective. You may reply with only one word.")
+      (user "Decide the best action for the following task to complete it and work towards the objective.
 
-(defn task->subtasks []
+You may accept the task if its output fully completes the task and the output is not further tasks. Think critically.
+If the output is a list of subtasks, or the task can be profitably split up, divide the task into smaller subtasks that together, would complete the task.
+You may attempt the task if it is simple enough to complete and has no output yet.
+Retry the task if its existing output is unsatisfactory.
+Remove the task if it is redundant.
+Revise the task if it's badly specified.
+Abandon the task if it works against the objective
+Escalate the task where it is too difficult or you need human input.
+
+The task, expressed in JSON, is:
+
+{{format_task task}}
+
+Respond with the single most appropriate of the following words:
+
+DIVIDE
+ATTEMPT
+RETRY
+REMOVE
+REVISE
+ABANDON
+ACCEPT
+ESCALATE
+")
+      (assistant "{{gen 'result'}}"))
+    :format_task format-task
+    :caching False))
+
+(defn divide-task [] ; -> list of tasks
   "Guidance program to split a task into subtasks."
   (guidance
     (ncat
-      (system "Your purpose is to divide tasks into a list of subtasks, in valid JSON format.")
-      (user "
-Here you are given a task defined in json format.
-```json
-{
-  \"task\": \"{{task}}\",
-  \"objective\": \"{{objective}}\",
-  \"tools\": \"{{tools}}\",
-  \"context\": \"{{context}}\"
-}
+      (system "Your purpose is to divide tasks into a list of subtasks, one per line.")
+      (user "{{format_task task}}
 
-Respond with a list of tasks in the same format that if all completed together, would complete the given task, keeping in mind the overall objective and context. Use one line per task.")
-      (assistant "
-[
-  {{#geneach 'subtasks'}}
-  \"{{gen 'subtask'}}\",{{/geneach}}
-]
-"))))
+Respond with a list of sub-tasks that if all completed together, would complete the given task, keeping in mind the overall objective, most important first. Use one bullet point per task.")
+      (assistant "{{gen 'result'}}"))
+    :format_task format-task
+    :caching False))
   
-(defn revise-task [task-list]
-  "Given a list of tasks and the current status, revise a particular task.")
+(defn revise-task [] ; -> task
+  "Given a task and the current status, revise a particular task."
+  (guidance
+    (ncat
+      (system "Your purpose is to revise a task instruction to better achieve its purpose, in light of the context.")
+      (user "{{format_task task}}
 
-(defn divide-or-conquer-task [task]
-  "Determine if a task should be split into subtasks or executed.")
+Revise the task in light of the context. Respond with one phrase which is the revised task only.")
+      (assistant "{{gen 'result'}}"))
+    :format_task format-task
+    :caching False))
 
-(defn execute-task [task-list]
-  "Given a task and tools, complete a particular task.
-If it cannot be completed, return an error code.")
+(defn attempt-task [] ; -> task output
+  "Given a task and tools, attempt a particular task.
+If it cannot be completed, return an error."
+  (guidance
+    (ncat
+      (system "Your purpose is to attempt the following task.")
+      (user "{{format_task task}}")
+      (user "Respond with an output that completes the task.")
+      (user "Respond with an output that completes the task.
+If you cannot complete the task immediately, respond with 'FAILED: (error description)'.
+If you can complete the task immediately, respond with the output only.")
+      (assistant "{{gen 'result'}}"))
+    :format_task format-task
+    :caching False))
 
-(defn judge-task [task-list]
-  "Given an executed task, determine if a task should be marked as completed
-or marked for another attempt at execution.
-If it has failed multiple times, return an error code.")
+(defn retry-task [] ; -> task output
+  "Given a task, tools, retry a particular task.
+If it cannot be completed, return an error."
+  (guidance
+    (ncat
+      (system "Your purpose is to retry the following task.")
+      (user "{{format_task task}}
+
+Respond with a new output that completes the task.
+If you cannot complete the task immediately, respond with 'FAILED: (error description)'.
+If you can complete the task immediately, respond with the output only.")
+      (assistant "{{gen 'result'}}"))
+    :format_task format-task
+    :caching False))

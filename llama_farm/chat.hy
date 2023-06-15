@@ -65,9 +65,9 @@ Functions that return messages or are associated with chat management.
           quoted-str (+ "> " (.replace chat-str "\n" "\n> "))]
       (if blockquote
           (.join "\n\n"
-                 [(summaries.extract bot chat-str topic :max-token-length 200)
+                 [(summaries.extract bot chat-str topic :max-token-length 250)
                   quoted-str])
-          (summaries.extract bot chat-str topic :max-token-length 200)))))
+          (summaries.extract bot chat-str topic :max-token-length 250)))))
 
 (defn topic [bot chat-history] ; -> text
   "Determine the current topic of conversation from the chat history. Return text."
