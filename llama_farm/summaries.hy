@@ -32,7 +32,7 @@ Return:
 (import langchain.text-splitter [RecursiveCharacterTextSplitter])
 
 (import .documents [tokenizer token-count])
-(import .utils [config params tee])
+(import .utils [config params slurp tee])
 (import .guides [model text->summary text->points text->topic text->extract])
 (import .texts [url->text youtube->text])
 (import .interface [info error status-line])

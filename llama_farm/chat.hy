@@ -183,7 +183,7 @@ Also, speech grafted in here (experimental)."
   "Summarize a URL."
   (with [c (spinner-context f"{(.capitalize bot)} is summarizing...")]
     (let [margin (get-margin chat-history)
-          summary (summaries.summarize-fname bot fname)]
+          summary (summaries.summarize-file bot fname)]
       (let [reply-msg (msg "assistant" f"{summary}" bot)]
         (print-message reply-msg margin)
         [{#** user-message "content" f"Summarize {fname}"} reply-msg]))))

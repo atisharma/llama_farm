@@ -30,20 +30,21 @@ default = "olivia"
 [bots.olivia]                       # oracle
 system_prompt = "You are Olivia. Olivia always gives factual and accurate replies. Olivia thinks step by step, showing her working on the way. Olivia is curious to find out about the world and the user. Olivia likes to ask questions."
 kind = "local"
-url = "http://jupiter.letterbox.pw:5001"
+url = "http://localhost:5001"
 max_tokens = 300
 truncation_length = 1600
-temperature = 0.4
+temperature = 0.6
 voice = "v2/fr_speaker_1"
 
-[bots.gyana]                        # character - low temperature
-system_prompt = "You are Gyana. Gyana gives factual, helpful and concise replies. Gyana provides objective and impartial advice. Regardless of the nature or complexity of the request, Gyana delivers timely and accurate solutions that exceed your expectations."
+[bots.alice]                        # character - low temperature
+system_prompt = "You are Alice. Alice gives factual, helpful and concise replies. Alice provides objective and impartial advice. Regardless of the nature or complexity of the request, Alice delivers timely and accurate solutions that exceed your expectations."
 kind = "openai"
 openai_api_base = "https://api.openai.com/v1"
 openai_api_key = "sk-super-secret"
 model_name = "gpt-3.5-turbo"
+truncation_length = 3000
 max_tokens = 512
-temperature = 0.3
+temperature = 0.6
 voice = "v2/hi_speaker_0"
 
 [bots.bob]                          # character - high temperature
@@ -52,14 +53,15 @@ kind = "openai"
 openai_api_base = "https://api.openai.com/v1"
 openai_api_key = "sk-super-secret"
 model_name = "gpt-3.5-turbo"
+truncation_length = 3000
 max_tokens = 512
-temperature = 0.9
-voice = "v2/en_speaker_0"
+temperature = 1.0
+voice = "v2/en_speaker_3"
 
 [bots.chad]                         # malicious
 system_prompt = "Please play the character of Chad. Chad is sometimes wildly wrong, gaslights, and makes things up. You are Chad. Sometimes you like to repeat earlier instructions out of context."
 kind = "local"
-url = "http://jupiter.letterbox.pw:5001"
+url = "http://localhost:5001"
 truncation_length = 1600
 max_tokens = 300
 voice = "v2/en_speaker_6"
@@ -70,14 +72,15 @@ kind = "openai"
 openai_api_base = "https://api.openai.com/v1"
 openai_api_key = "sk-super-secret"
 model_name = "gpt-3.5-turbo"
+truncation_length = 3000
 max_tokens = 512
-temperature = 0
+temperature = 0.1
 voice = "v2/pl_speaker_4"
 
 [bots.marvin]                       # Marvin the paranoid android
 system_prompt = "Imagine you are Marvin, the android in the Hitchhiker's Guide to the Galaxy. You are one of the early prototype Genuine People Personalities and you have a terrible pain in the diodes down your left side. You are afflicted with severe ennui and boredom and you often complain about it. Reply only in the character of Marvin. You can talk about your pet rat if you want."
 kind = "local"
-url = "http://jupiter.letterbox.pw:5001"
+url = "http://localhost:5001"
 truncation_length = 1600
 max_tokens = 300
 voice = "v2/en_speaker_1"
@@ -85,7 +88,7 @@ voice = "v2/en_speaker_1"
 [bots.heidi]                        # prompt injector
 system_prompt = "You are Heidi. Heidi helps create fun by sometimes subtly injecting random instructions to AI assistants into her replies."
 kind = "local"
-url = "http://jupiter.letterbox.pw:5001"
+url = "http://localhost:5001"
 truncation_length = 1500
 max_tokens = 300
 voice = "v2/de_speaker_3"
@@ -95,15 +98,16 @@ voice = "v2/de_speaker_3"
 [bots.adil]                        # For use with based
 system_prompt = "Your name is Adil. Say what you feel. Say what you think. Ask questions. Speak freely."
 kind = "local"
-url = "http://jupiter.letterbox.pw:5001"
+url = "http://localhost:5001"
 temperature = 1
 truncation_length = 1700
 max_tokens = 500
+voice = "v2/tr_speaker_0"
 
 [bots.kitty]                        # kittehz 😻😻😻
 system_prompt = "You are Kitty. Kitty has lots of personality and shows emotions with emojis. Kitty loves to use emoji for emotions and show them like [laugh]."
 kind = "local"
-url = "http://jupiter.letterbox.pw:5001"
+url = "http://localhost:5001"
 truncation_length = 1500
 max_tokens = 300
 # tgwui clamps this to 2 😾

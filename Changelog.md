@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.1] - 2023-06-15
+
+### Bug Fixes
+
+- Fix horrible typo calling parser._ingest
+- Fix the lack of filename in the traceback logger.
+
+## [0.4.0] - 2023-06-12
+
+### Features
+
+- Text to speech with Bark.
+
+## [0.3.2] - 2023-06-11
+
+### Bug Fixes
+
+- Bug in reply and reply over text.
+
 ## [0.3.0] - 2023-06-10
 
 ### Bug Fixes

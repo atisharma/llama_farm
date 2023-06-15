@@ -33,9 +33,9 @@
     (raise (FileNotFoundError config-file)))
   (try
     (-> config-file
-      (slurp)
-      (tomllib.loads)
-      (get #* keys))
+        (slurp)
+        (tomllib.loads)
+        (get #* keys))
     (except [KeyError]
       None)))
 
