@@ -38,7 +38,6 @@ either internally or to a chatbot / langchain.
 
 ;; TODO: status-line: history (tokens) | model | current-topic | current tool
 ;; TODO: remove global state for current topic and context.
-;; TODO: manage state a bit more cleanly in this module
 ;; TODO: move all spinners to this top level -- a function decorator would be nice, that didn't clash with existing indicators
 
 (setv bot (config "bots" "default")
@@ -217,7 +216,6 @@ either internally or to a chatbot / langchain.
                                       knowledge ""))
       (= command "/undo") (setv chat-history (cut chat-history 0 -2))
       (in command ["/h" "/help"]) (info (help-str))
-      (= command "/version") (info (version "llama_farm"))
       ;;
       ;; bot / chat commands
       (= command "/bot") (do (set-bot args) (setv bot-name (.capitalize bot)))

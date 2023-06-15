@@ -8,7 +8,6 @@ The usual readline shortcuts should be available.
 - **/help /h**                   Show this helpful text
 - **/quit /q /exit**             Quit
 - **/quit!**                     Quit without saving the conversation
-- **/version**                   Show the version of this client
 - **/clear**                     Clear the display
 - **/markdown**                  Toggle markdown rendering of messages
 

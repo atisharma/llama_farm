@@ -7,7 +7,8 @@ import llama_farm.repl
 
 
 try:
-    __version__ = version("package-name")
+    __version__ = version("llama_farm")
 except PackageNotFoundError:
     # package is not installed
+    __version__ = "unknown, not installed via pip"
     pass
