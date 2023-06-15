@@ -99,6 +99,11 @@
     (when (path.exists)
       (path.read-text))))
 
+(defn barf [text fname]
+  "Write a text file."
+  (with [f (open fname :mode "w" :encoding "UTF-8")]
+    (.write f text)))
+
 ;;; -----------------------------------------------------------------------------
 ;;; Other utility functions
 ;;; -----------------------------------------------------------------------------

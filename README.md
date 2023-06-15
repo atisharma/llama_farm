@@ -71,11 +71,9 @@ less that of OpenAI's models.
   library is therefore not available.
 
 ### Roadmap
-- Replace LLMs with guides:
-  * ask.xyz
-  * models.reply (do first, easy)
+- You can grep the codebase for "TODO:" tags; these will migrate to github issues
+- Continue to use guidance, or use own API calls, since quite simple?
 - Reconsider store document size, since summarization works well
 - Define tools for freeform memory access rather than /command syntax
-- You can grep the codebase for "TODO:" tags; these will migrate to github issues
 - Define JSON API templates for other web tools
-- Self-chat between bots with intention/task injection
+- Self-chat between bots with intention/task injection; see e.g. operand/agency

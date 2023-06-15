@@ -238,7 +238,7 @@ either internally or to a chatbot / langchain.
                                (info knowledge))
       ;;
       ;; vectorstore commands
-      (= command "/ingest") (_ingest (shlex.split args))
+      (= command "/ingest") (_ingest #* (shlex.split args))
       (= command "/sources") (print-sources (store.mmr knowledge-store args))
       (= command "/similarity") (print-docs (store.similarity knowledge-store args))
       (= command "/recall") (info (chat.recall chat-store bot (or args current-topic)))

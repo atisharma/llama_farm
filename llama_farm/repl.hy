@@ -15,7 +15,7 @@ The main REPL where we chat to the bot and issue commands.
 (import signal [signal SIGINT])
 (import readline)
 
-(import .utils [config rlinput user file-append])
+(import .utils [config rlinput user file-append barf])
 (import .parser [parse set-bot bot])
 (import .chat [commit-chat])
 (import .interface [banner
@@ -61,7 +61,10 @@ it, and passes it to the appropriate action."
         (except [KeyboardInterrupt]
           (print)
           (error "**/quit** to exit"))
-        (except [Exception]
+        (except [e [Exception]]
+          (with [f (open fname :mode "w" :encoding "UTF-8")]
+            (import traceback)
+            (traceback.print-exception e :file f))
           (exception))))
     (readline.write-history-file history-file)
     (clear)))
