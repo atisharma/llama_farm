@@ -214,6 +214,7 @@ Consider the following additional context before responding:
 
 ;;; -----------------------------------------------------------------------------
 ;;; Use of tools with guidance
+;;; Anything below this line is a bit hit-and-miss
 ;;; -----------------------------------------------------------------------------
 
 (defn tools? [#* tools]

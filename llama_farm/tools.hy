@@ -32,6 +32,8 @@ A tool's docstring is formatted using `tool-parser.describe` and stuffed into th
 ;;; tool: command_string -> text
 ;;; A tool's docstring is formatted using `describe` and stuffed into the prompt.
 ;;; -----------------------------------------------------------------------------
+(import .utils [slurp])
+
 
 (defn lorem [n]
   "returns n sentences of lorem ipsum text."

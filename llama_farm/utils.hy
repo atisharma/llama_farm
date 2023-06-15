@@ -10,12 +10,11 @@
 (import urllib.parse [urlparse])
 
 ;; tomllib for python 3.11 onwards
+;; when we move to 3.11, we can remove this
 (try
   (import tomllib)
   (except [ModuleNotFoundError]
     (import tomli :as tomllib)))
-
-(import rich)
 
 
 (setv re-parser (re.compile r"([^\n][ \w]*): "))
@@ -24,13 +23,12 @@
 (defclass ResponseError [Exception])
 
 
-(defn tee [x]
-  (rich.inspect x)
-  (rich.print x)
-  x)
+;;; -----------------------------------------------------------------------------
+;;; config functions
+;;; -----------------------------------------------------------------------------
 
 (defn config [#* keys]
-  ; get values in a toml file like a hashmap, but default to None.
+  "Get values in a toml file like a hashmap, but default to None."
   (unless (os.path.isfile config-file)
     (raise (FileNotFoundError config-file)))
   (try
@@ -48,6 +46,10 @@
 (defn params [bot]
   "Return a dict of bot's parameters."
   (get (config "bots") (.lower bot)))
+
+;;; -----------------------------------------------------------------------------
+;;; File & IO functions
+;;; -----------------------------------------------------------------------------
 
 (defn rlinput [prompt [prefill ""]]
   "Like python's input() but using readline."
@@ -97,16 +99,34 @@
     (when (path.exists)
       (path.read-text))))
 
+;;; -----------------------------------------------------------------------------
+;;; Other utility functions
+;;; -----------------------------------------------------------------------------
+
+(defn tee [x]
+  (import rich)
+  (rich.inspect x)
+  (rich.print x)
+  x)
+
 (defn hash-id [s]
   "Hex digest of md5 hash of string."
   (-> (s.encode "utf-8")
       (md5)
       (.hexdigest)))
 
+(defn short-id [x]
+  "First 6 chars of hash-id."
+  (cut (hash-id x) 6))
+
 (defn is-url [url]
   "True if a plausible url."
   (let [result (urlparse url)]
     (all [result.scheme result.netloc])))
+
+;;; -----------------------------------------------------------------------------
+;;; Message and chat functions
+;;; -----------------------------------------------------------------------------
 
 (defn msg [role content bot]
   "To conform with langchain's ridiculous BaseMessage schema."
@@ -143,48 +163,12 @@
 {(:time d.metadata "---")}
 {d.page-content}")))
 
-  
-;; defunct - consider removing the following
+;;; -----------------------------------------------------------------------------
+;;; String functions
+;;; -----------------------------------------------------------------------------
 
-(defn dprint [#* args]
-  "Pretty print a bunch of args."
-  (import rich)
-  (for [x args]
-    (rich.print (* "═" 80))
-    (rich.print x))
-  (rich.print (* "┈" 80)))
-
-(defn get-response [response]
-  (try
-    (get response "choices" 0 "text")
-    (except [KeyError]
-      (let [response-str (json.dumps response :indent 4)]
-        (raise (ResponseError f"Bad response format from server,\n{response-str}"))))))
-
-(defn get-alpaca-response-text [response]
-  "Get the response text of an Alpaca type response."
-  (-> response
-    (.split "# Response:")
-    (get -1)
-    (.strip)))
-
-(defn ->conclusion [text]
-  "Extract just the last section of a reply string."
-  (-> text
-      (.split ":")
-      (get -1)
-      (.strip)))
-
-(defn ->dict [text]
-  "Split output into a dictionary with a key for each section of a reply string."
-  (let [pairs (->> text
-                   (re-parser.split)
-                   (filter None))]
-    (dfor [k v] (zip pairs pairs)
-       (.strip (k.lower)) (.strip v))))
-  
-(defn ->text [plan]
-  "Turn a plan dict into text."
+(defn indent [s [prefix "  "]]
+  "Indent a string on each line with the prefix."
   (.join "\n"
-         (lfor [k v] (.items plan)
-               f"{(k.upper)}: {v}")))
+         (lfor l (.split s)
+               (+ prefix l))))

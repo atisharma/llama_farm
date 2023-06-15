@@ -26,7 +26,7 @@ task:
 (import rich.tree [Tree])
 
 (import .guides [model format-task manage-task divide-task revise-task attempt-task judge-task])
-(import .utils [bots hash-id])
+(import .utils [bots short-id indent])
 
 
 (defn debullet [markdown-list] ; -> list[str]
@@ -39,15 +39,6 @@ task:
                    "[*] " (cut l 4 None)
                    "[ ] " (cut l 4 None))
             l)))
-
-(defn indent [s [prefix "  "]]
-  "Indent a string on each line with the prefix."
-  (.join "\n"
-         (map (fn [x] f"{prefix}{x}")
-              (.split s "\n"))))
-
-(defn short-id [x]
-  (cut (hash-id x) 6))
 
 (defn format-tree [task [i 0]]
   "Format the whole tree for human viewing."
