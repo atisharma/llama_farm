@@ -65,7 +65,8 @@ DATA MODEL
                               :api-key (:openai-api-key p "n/a")
                               :api-base (:openai-api-base p (:url p None))
                               :temperature (:temperature p 0.5)
-                              :api-type "open_ai")
+                              :api-type "open_ai"
+                              :caching (config "cache"))
         (guidance.llms.Mock (lorem.get-word :count 200))))) 
 
 ;;; -----------------------------------------------------------------------------

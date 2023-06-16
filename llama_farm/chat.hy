@@ -79,17 +79,24 @@ Functions that return messages or are associated with chat management.
   "Simply append the new messages to the chat history, log the change, and return it.
 Also, speech grafted in here (experimental)."
   ;; TODO: put speech somewhere more sensible
+  ;; TODO: return text before speaking
   (for [msg msgs]
     (.append chat-history msg)
     (file-append msg (config "chatlog"))
-    (when (and (config "speech")
-               (= "assistant" (:role msg)))
-      (import .speech [bark])
-      (let [bot (:bot msg)
-            voice (:voice (params bot) "v2/en_speaker_0")
-            text (:content msg)]
+    (let [tts-engine (config "speech")
+          bot (:bot msg)
+          text (:content msg)]
+      (when (= "assistant" (:role msg))
         (with [c (spinner-context f"{(.capitalize bot)} is speaking..." :style "italic orange4")]
-          (bark text :voice voice)))))
+          (cond (= tts-engine "bark") (do
+                                        (import .bark [speak])
+                                        (speak text
+                                               :voice (:bark-voice (params bot) "v2/en_speaker_0")))
+                (= tts-engine "balacoon") (do
+                                            (import .balacoon [speak])
+                                            (speak text
+                                                   :model (config "balacoon_model")
+                                                   :speaker (:balacoon-speaker (params bot)))))))))
   chat-history)
 
 ;; TODO: call tools if appropriate
