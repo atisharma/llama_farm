@@ -30,7 +30,8 @@ optional k value to specify the number of results.
 
 (require hyrule.argmove [-> ->>])
 
-(import logging)
+(import .logger [logging])
+
 (import os)
 
 (import langchain.embeddings [HuggingFaceEmbeddings])
