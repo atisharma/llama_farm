@@ -15,8 +15,10 @@ Functions that return messages or are associated with chat management.
 (import .interface [get-margin
                     print-message
                     print-sources
+                    bot-color
                     spinner-context
                     error])
+
 
 ;;; -----------------------------------------------------------------------------
 ;;; chat management
@@ -27,8 +29,9 @@ Functions that return messages or are associated with chat management.
    - split it and store the first part in the chat store.
    - set a new context.
    Return the (new or old) chat history, context, topic."
-  (let [truncation-length (:truncation-length (params bot) 1800)
+  (let [context-length (:context-length (params bot) 2000)
         max-tokens (:max-tokens (params bot) 50)
+        truncation-length (- context-length max-tokens)
         ; need enough space to provide whole chat + system msg + new text
         token-length (+ max-tokens (token-count (inject system-prompt chat-history)))
         ;; assume chat length is multiple of 2 (else we lose order of response)
@@ -36,73 +39,72 @@ Functions that return messages or are associated with chat management.
     (if (> token-length truncation-length)
       (let [pre (cut chat-history cut-length)
             post (cut chat-history cut-length None)
-            new-topic (topic bot post)]
+            new-topic (summaries.chat-topic bot post)]
         (commit-chat bot pre)
         {"chat_history" post
          "current_topic" new-topic
-         "context" (recall chat-store bot new-topic)
+         "context" (recall chat-store bot new-topic :chatdb True)
          "knowledge" (recall knowledge-store bot new-topic)})
       {"chat_history" chat-history
-       "current_topic" current-topic
+       "current_topic" (if (>= (len chat-history) 4)
+                           (summaries.chat-topic bot chat-history)
+                           current-topic)
        "context" context
        "knowledge" knowledge})))
 
 (defn commit-chat [bot chat]
   "Save a chat history fragment to the chat store."
-  (let [chat-topic (topic bot chat)
+  (let [chat-topic (summaries.chat-topic bot chat)
         docs (chat->docs chat chat-topic)]
     (store.ingest-docs chat-store docs)))
 
-(defn recall [db bot topic [blockquote False]] ; -> text
-  "Summarise a topic from a memory store (usually the chat).
+(defn recall [db bot topic [blockquote False] [chatdb False]] ; -> text
+  "Summarise a topic from the cat memory store.
    Return a summary text which may then be used for injection in the system message."
-  (with [c (spinner-context f"{(.capitalize bot)} is summarizing...")]
+  (with [c (spinner-context f"{(.capitalize bot)} is recalling...")]
     (let [username (or (.lower (config "user")) "user")
-          query f"{topic}\n{bot}:\n{username}:"
+          query f"The query is: {topic}"
           k (or (config "storage" "sources") 6)
-          docs (store.similarity db query :k k)
+          search-str (if chatdb f"{topic} {bot} {username}" topic)
+          docs (store.similarity db search-str :k k)
           chat-str (format-docs docs)
           quoted-str (+ "> " (.replace chat-str "\n" "\n> "))]
       (if blockquote
           (.join "\n\n"
-                 [(summaries.extract bot chat-str topic :max-token-length 250)
+                 [(summaries.extract bot chat-str query :max-token-length 250)
                   quoted-str])
-          (summaries.extract bot chat-str topic :max-token-length 250)))))
+          (summaries.extract bot chat-str query :max-token-length 250)))))
 
-(defn topic [bot chat-history] ; -> text
-  "Determine the current topic of conversation from the chat history. Return text."
-  (let [username (or (config "user") "user")
-        chat-text (format-chat-history chat-history)]
-    (summaries.topic bot chat-text)))
-
-(defn extend [chat-history #* msgs]
-  "Simply append the new messages to the chat history, log the change, and return it.
-Also, speech grafted in here (experimental)."
-  ;; TODO: put speech somewhere more sensible
-  ;; TODO: return text before speaking
+(defn process [chat-history #* msgs]
+  "Simply append the new messages to the chat history, log the change, and return it."
   (for [msg msgs]
     (.append chat-history msg)
     (file-append msg (config "chatlog"))
-    (let [tts-engine (config "speech")
-          bot (:bot msg)
-          text (:content msg)]
-      (when (= "assistant" (:role msg))
-        (with [c (spinner-context f"{(.capitalize bot)} is speaking..." :style "italic orange4")]
-          (cond (= tts-engine "bark") (do
-                                        (import .bark [speak])
-                                        (speak text
-                                               :voice (:bark-voice (params bot) "v2/en_speaker_0")))
-                (= tts-engine "balacoon") (do
-                                            (import .balacoon [speak])
-                                            (speak text
-                                                   :model (config "balacoon_model")
-                                                   :speaker (:balacoon-speaker (params bot)))))))))
+    (when (= "assistant" (:role msg))
+      (speak msg)))
   chat-history)
+
+(defn speak [msg]
+  "Speak if and how configured to do so."
+  (let [tts-engine (config "speech")
+        bot (:bot msg)
+        text (:content msg)]
+    (when text
+      (with [c (spinner-context f"{(.capitalize bot)} is speaking..." :style f"italic {(bot-color bot)}")]
+        (cond (= tts-engine "bark") (do
+                                      (import .bark [speak])
+                                      (speak text
+                                             :voice (:bark-voice (params bot) "v2/en_speaker_0")))
+              (= tts-engine "balacoon") (do
+                                          (import .balacoon [speak])
+                                          (speak text
+                                                 :model (config "balacoon_model")
+                                                 :speaker (:balacoon-speaker (params bot)))))))))
 
 ;; TODO: call tools if appropriate
 (defn reply [bot chat-history user-message system-prompt] ; -> msg
   "Simply reply to the chat with a message."
-  (with [c (spinner-context f"{(.capitalize bot)} is thinking...")]
+  (with [c (spinner-context f"{(.capitalize bot)} is thinking..." :style f"italic {(bot-color bot)}")]
     (let [model (guides.model bot)
           program (guides.chat->reply chat-history user-message system-prompt)
           output (try
@@ -136,8 +138,9 @@ Also, speech grafted in here (experimental)."
 (defn over-text [bot user-message args chat-history * text] ; -> print, msg
   "Chat over some text. Print the reply message and return it."
   (let [margin (get-margin chat-history)
-        truncation-length (:truncation-length (params bot) 1800)
+        context-length (:context-length (params bot) 2000)
         max-tokens (:max-tokens (params bot) 750)
+        truncation-length (- context-length max-tokens)
         spare-tokens (- truncation-length
                         max-tokens
                         (token-count chat-history))
@@ -148,15 +151,16 @@ Also, speech grafted in here (experimental)."
     (print-message reply-msg margin)
     reply-msg))
 
-(defn over-docs [bot user-message args chat-history * docs]
+(defn over-docs [bot user-message args chat-history * docs [sources False]]
   "Chat over a set of documents."
+  (when sources (print-sources docs))
   (let [text (format-docs docs)]
     (over-text bot user-message args chat-history :text text)))
 
-(defn over-db [bot user-message args chat-history * db]
+(defn over-db [bot user-message args chat-history * db [sources False]]
   (let [k (or (config "storage" "sources") 6)
         docs (store.similarity db args :k k)]
-    (over-docs bot user-message args chat-history :docs docs)))
+    (over-docs bot user-message args chat-history :docs docs :sources sources)))
 
 (defn over-wikipedia [bot user-message args chat-history]
   (let [[topic _ query] (.partition args " ")
@@ -164,7 +168,7 @@ Also, speech grafted in here (experimental)."
     (over-text bot user-message args chat-history :text text)))
 
 (defn over-file [bot user-message args chat-history]
-  (let [[fname rest-args] (shlex.split args)
+  (let [[fname #* rest-args] (shlex.split args)
         query (.join " " rest-args)
         text (slurp fname)]
     (over-text bot user-message query chat-history :text text)))
@@ -193,7 +197,7 @@ Also, speech grafted in here (experimental)."
           summary (summaries.summarize-file bot fname)]
       (let [reply-msg (msg "assistant" f"{summary}" bot)]
         (print-message reply-msg margin)
-        [{#** user-message "content" f"Summarize {fname}"} reply-msg]))))
+        reply-msg))))
 
 (defn over-summarize-url [bot user-message url chat-history]
   "Summarize a URL."
