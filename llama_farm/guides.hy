@@ -123,7 +123,7 @@ DATA MODEL
   (guidance
     (ncat (system "Your sole purpose is to express the topic of conversation in one short sentence.")
           (chat->guidance chat)
-          (user "Summarize the topic of conversation so far in about ten words.")
+          (user "Summarize the topic of conversation so far in as few words as possible.")
           (assistant "{{gen 'result'}}"))))
 
 (defn chat->points [chat]
@@ -153,7 +153,7 @@ DATA MODEL
   (guidance
     (ncat
       (system "You are a helpful assistant who follows instructions carefully.")
-      (user "Please express the topic of the following text in less than 10 words:
+      (user "Please express the topic of the following text in as few words as possible:
 
 {{input}}")
       (assistant "{{gen 'result'}}"))))
@@ -164,7 +164,7 @@ DATA MODEL
     (ncat
       ;(system "Your sole purpose is to summarize text into bullet points.")
       (system "You are a helpful assistant who follows instructions carefully.")
-      (user "Summarize the following text as a list of bullet points, preserving the most interesting, pertinent and important points. Remove legal disclaimers and advertising. If there is no relevant information, reply with '[removed]'.
+      (user "Summarize the following text as a list of bullet points, preserving the most interesting, pertinent and important points. Remove legal disclaimers and advertising. If there is no relevant information, reply with '[remove]'.
 
 {{input}}
 
@@ -176,7 +176,7 @@ Write only bullet points, with no padding text.")
   (guidance
     (ncat
       (system "You are a helpful assistant who follows instructions carefully.")
-      (user "Please concisely rewrite the following text, preserving the most interesting, pertinent and important points. Remove legal disclaimers and advertising. If there is no relevant information, reply with '[removed]'.
+      (user "Please concisely rewrite the following text, preserving the most interesting, pertinent and important points. Remove legal disclaimers and advertising. If there is no relevant information, reply with '[remove]'.
 
 {{input}}
 
@@ -189,10 +189,10 @@ Write only bullet points, with no padding text.")
     (ncat
       (system "You are a helpful assistant who follows instructions carefully.")
       (user "{{query}}
-Please concisely rewrite the following text, extracting the points most interesting, pertinent and important to the preceding question. Don't invent information. If there is no relevant information, reply with '[removed]'.
+
+Please concisely rewrite the following text, extracting the points most interesting, pertinent and important to the preceding query. Don't invent information. If there is no relevant information, be silent.
 
 {{input}}
-
 ")
       (assistant "{{gen 'result'}}"))))
 

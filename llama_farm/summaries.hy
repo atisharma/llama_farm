@@ -33,7 +33,7 @@ Return:
 
 (import .documents [tokenizer token-count])
 (import .utils [config params slurp tee])
-(import .guides [model text->summary text->points text->topic text->extract])
+(import .guides [model text->summary text->points text->topic text->extract chat->topic])
 (import .texts [url->text youtube->text])
 (import .interface [info error status-line])
 
@@ -53,13 +53,11 @@ Return:
          (map (fn [d] (. d page-content)))
          (list))))
   
-(defn reduce-oneshot [f bot text]
+(defn reduce-oneshot [f bot text [chunk-size 1000]]
   "Split a text into fragments and reduce each part by applying `f`.
 Join them together at the end."
   ; TODO: consider injecting summary of previous fragment as context.
-  ; TODO: consider per-bot chunk size derived from context length limit
-  (let [reducer (partial f bot)
-        chunk-size (config "summary-chunk-size")]
+  (let [reducer (partial f bot)]
     (->> text
          (fragment :chunk-size chunk-size)
          (map reducer)
@@ -72,12 +70,14 @@ Join them together at the end."
                         [reduction Inf]]
   "Summarize down to below specified token length by applying `f` recursively.
 Stop at maximum recursion depth or when the reduction ratio is inadequate."
-  (let [l (token-count text)]
+  (let [l (token-count text)
+        context-length (:context-length (params bot) 2000)
+        chunk-size (- (:context-length (params bot) 2000) max-token-length)]
     ;(info f"recursion depth {depth}, reduction {reduction :4.2f}, {l} tokens -> {max-token-length}...")
     (if (and (> l max-token-length)
              (< depth max-depth)
              (> reduction 1.2))
-        (let [reduced-text (reduce-oneshot f bot text)
+        (let [reduced-text (reduce-oneshot f bot text :chunk-size chunk-size)
               reduced-length (token-count reduced-text)]
           (reduce-recursive f bot reduced-text
                             :max-token-length max-token-length
@@ -121,6 +121,14 @@ Fall back to bullet points on failure, which seems more reliable."
           ""))
       ""))
   
+(defn chat-topic [bot chat-history]
+  "Extract the topic from a chat that fits within the context length."
+  (try
+    (:result ((chat->topic chat-history) :llm (model bot)))
+    (except [ValueError]
+      (error "Topic summarization failed.")
+      "")))
+  
 (defn extract-fragment [query bot text]
   "Extract relevant points from a piece of text that fits within the context length."
   (if (.strip text)
@@ -163,10 +171,10 @@ Fall back to bullet points on failure, which seems more reliable."
 (defn summarize-hybrid [bot text [max-token-length 750]]
   "Recursively reduce to a summary paragraph via bullet points."
   (->> text
-       (points bot :max-token-length (* 5 max-token-length))
+       (points bot :max-token-length max-token-length)
        (summarize bot :max-token-length max-token-length)))
 
-(defn topic [bot text [max-token-length 750] [max-depth 5]]
+(defn text-topic [bot text [max-token-length 750] [max-depth 5]]
   "Recursively reduce to bullet points then determine a topic."
   (.replace
     (->> text
