@@ -45,6 +45,17 @@ written but is not currently used or tested.
 ### Help text
 The help text is [here](llama_farm/help.md).
 
+### Changelog
+
+[See the changelog here](Changelog.md)
+
+**BREAKING CHANGE**: the default embedding for the vector db changed in 0.6.0
+to allow longer text fragments. You'll either need to replace your old vector
+dbs (under `storage/`) or change back the embedding and chunk sizes under the
+storage section in the config file. Other format changes in the config file
+need to be reflected in your config also (see [the example
+config](config.toml.example)).
+
 ### Setup
 Copy the `config.toml.example` to `config.toml`.
 To use openAI, you need to set your key in `config.toml`.
