@@ -51,6 +51,7 @@
 ;;; File & IO functions
 ;;; -----------------------------------------------------------------------------
 
+;; TODO: tab completion
 (defn rlinput [prompt [prefill ""]]
   "Like python's input() but using readline."
   (readline.set_startup_hook (fn [] (readline.insert_text prefill)))
@@ -134,10 +135,10 @@
 ;;; -----------------------------------------------------------------------------
 
 (defn msg [role content bot]
-  "To conform with langchain's ridiculous BaseMessage schema."
+  "Just a simple dict with the needed fields."
   {"role" role
    "bot" (.lower bot)
-   "content" content})
+   "content" (.strip content)})
 
 (defn system [content]
   (msg "system" content "system"))
