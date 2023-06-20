@@ -182,7 +182,7 @@ Functions that relate to output on the screen.
     (print-markdown (format-metadata d)
                     :style "bold green italic")
     (print-markdown d.page-content
-                    :padding #(1 4 0 4)))
+                    :padding #(0 4 1 4)))
   (console.rule))
 
 (defn tabulate [rows headers
