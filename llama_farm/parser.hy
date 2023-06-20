@@ -1,6 +1,5 @@
 "
-Parse user input and dispatch the resulting operation,
-either internally or to a chatbot / langchain.
+Parse user input and dispatch the resulting operation internally.
 "
 
 (require hyrule.argmove [-> ->> as->])
@@ -36,7 +35,6 @@ either internally or to a chatbot / langchain.
 (import youtube-transcript-api._errors [TranscriptsDisabled])
 
 
-;; TODO: status-line: history (tokens) | model | current-topic | current tool
 ;; TODO: remove global state for current topic and context.
 ;; TODO: move all spinners to this top level -- a function decorator would be nice, that didn't clash with existing indicators
 
@@ -75,7 +73,7 @@ either internally or to a chatbot / langchain.
   (tabulate
     :rows (lfor p (bots)
                 (let [name f"{(.capitalize p)}" 
-                      kind (:kind (params p) "fake")
+                      kind (:kind (params p) "mock")
                       model (:model_name (params p) "")
                       temp (:temperature (params p) "")
                       system-prompt (:system-prompt (params p) "")]
@@ -101,8 +99,7 @@ either internally or to a chatbot / langchain.
    Do the action resulting from `line`, and return the updated chat history."
   (global bot context knowledge current-topic)
   (clear-status-line)
-  (let [chain-type (or (config "chain-type") "stuff")
-        bot-prompt (:system_prompt (params bot) "")
+  (let [bot-prompt (:system_prompt (params bot) "")
         bot-name (.capitalize bot)
         time-prompt f"Today's date and time is {(now->text)}."
         system-prompt f"{time-prompt}\n{bot-prompt}\nYou are talking to the user called {(.capitalize (:bot user-message))}.\n{context}\n{knowledge}"
@@ -123,38 +120,39 @@ either internally or to a chatbot / langchain.
     (cond
       ;;
       ;; commands that give a reply
-      (= command "/ask") (chat.extend chat-history
+      (= command "/ask") (chat.process chat-history
                                       user-message
                                       (chat.over-db bot
                                                     user-message
                                                     args
                                                     (inject system-prompt chat-history)
-                                                    :db knowledge-store))
-      (= command "/arxiv") (chat.extend chat-history
+                                                    :db knowledge-store
+                                                    :sources (:show-sources (config "storage") False)))
+      (= command "/arxiv") (chat.process chat-history
                                         user-message
                                         (chat.over-arxiv bot
                                                          user-message
                                                          args
                                                          (inject system-prompt chat-history)))
-      (= command "/wikipedia") (chat.extend chat-history
+      (= command "/wikipedia") (chat.process chat-history
                                             user-message
                                             (chat.over-wikipedia bot
                                                                  user-message
                                                                  args
                                                                  (inject system-prompt chat-history)))
-      (= command "/file") (chat.extend chat-history
+      (= command "/file") (chat.process chat-history
                                        user-message
                                        (chat.over-file bot
                                                        user-message
                                                        args
                                                        (inject system-prompt chat-history)))
-      (= command "/url") (chat.extend chat-history
+      (= command "/url") (chat.process chat-history
                                       user-message
                                       (chat.over-url bot
                                                      user-message
                                                      args
                                                      (inject system-prompt chat-history)))
-      (= command "/youtube") (chat.extend chat-history
+      (= command "/youtube") (chat.process chat-history
                                           user-message
                                           (chat.over-youtube bot
                                                              user-message
@@ -163,7 +161,7 @@ either internally or to a chatbot / langchain.
       ;;
       ;; summarization
       (= command "/summ-file") (try
-                                 (chat.extend chat-history
+                                 (chat.process chat-history
                                               user-message
                                               (chat.over-summarize-file bot
                                                                         user-message
@@ -172,7 +170,7 @@ either internally or to a chatbot / langchain.
                                  (except [e [MissingSchema ConnectionError]]
                                    (error f"I can't get anything from [{args}]({args})")))
       (= command "/summ-url") (try
-                                (chat.extend chat-history
+                                (chat.process chat-history
                                              user-message
                                              (chat.over-summarize-url bot
                                                                       user-message
@@ -181,7 +179,7 @@ either internally or to a chatbot / langchain.
                                 (except [e [MissingSchema ConnectionError]]
                                   (error f"I can't get anything from [{args}]({args})")))
       (= command "/summ-youtube") (try
-                                    (chat.extend chat-history
+                                    (chat.process chat-history
                                                  user-message
                                                  (chat.over-summarize-youtube bot
                                                                               user-message
@@ -230,24 +228,24 @@ either internally or to a chatbot / langchain.
                                  (setv current-topic (chat.topic bot chat-history))
                                  (info current-topic)))
       (= command "/context") (when current-topic
-                               (setv context (chat.recall chat-store bot current-topic)
+                               (setv context (chat.recall chat-store bot current-topic :chatdb True)
                                      knowledge (chat.recall knowledge-store bot current-topic))
                                (info context)
                                (info knowledge))
       ;;
       ;; vectorstore commands
       (= command "/ingest") (_ingest #* (shlex.split args))
-      (= command "/sources") (print-sources (store.mmr knowledge-store args))
-      (= command "/similarity") (print-docs (store.similarity knowledge-store args))
-      (= command "/recall") (info (chat.recall chat-store bot (or args current-topic)))
+      (= command "/sources") (print-sources (store.mmr knowledge-store args (or (config "storage" "sources") 6)))
+      (= command "/similarity") (print-docs (store.similarity knowledge-store args (or (config "storage" "sources") 6)))
+      (= command "/recall") (info (chat.recall chat-store bot (or args current-topic) :chatdb True))
       (= command "/know") (info (chat.recall knowledge-store bot (or args current-topic)))
       ;;
       (.startswith line "/") (error f"Unknown command **{command}**.")
       ;;
       ;; otherwise, just chat
       :else (let [reply-message (chat.reply bot chat-history user-message system-prompt)]
-              (chat.extend chat-history user-message reply-message)
-              (print-message reply-message margin)))
+              (print-message reply-message margin)
+              (chat.process chat-history user-message reply-message)))
       ;;
     (status-line f"[{(bot-color bot)}]{bot-name}[default] | [green]{(chat.token-count (inject system-prompt chat-history))} tkns | {current-topic}")
     chat-history))
