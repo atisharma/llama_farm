@@ -20,3 +20,4 @@ config.toml
 llama-farm.log
 chat_history.json
 guidance.stderr
+traceback.log
