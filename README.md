@@ -33,6 +33,9 @@ Llama-farm speaks to any OpenAI-compatible API:
 - lm-sys/FastChat (untested)
 - keldenl/gpt-llama.cpp (untested)
 
+The oobabooga solution with exllama is recommended because it's fast
+and is what gets tested.
+
 Llama-farm uses microsoft/guidance and hwchase17/langchain for some
 abstractions (see limitations).
 
@@ -46,8 +49,9 @@ The help text is [here](llama_farm/help.md).
 Copy the `config.toml.example` to `config.toml`.
 To use openAI, you need to set your key in `config.toml`.
 
-There are a lot of dependencies so it's recommended you install everything in a virtual environment.
-Either clone the repo, install the `requirements.txt` and run the module
+There are a lot of dependencies so it's recommended you install
+everything in a virtual environment.  Either clone the repo, install
+the `requirements.txt` and run the module
 ```
 $ <activate your venv>
 $ git clone https://github.com/atisharma/llama_farm
@@ -81,6 +85,9 @@ works surprisingly well with WizardLM-7B!  But see limitations below.
 - The OpenAI API (and compatible ones) do not expose a number of
   capabilities that local models have. The full power of the guidance
   library is therefore not available.
+- The `ingest` command (from command line or within the chat) can't be
+  used concurrently - one instance will overwrite the changes of
+  another.
 
 ### Roadmap
 - You can grep the codebase for "TODO:" tags; these will migrate to github issues
