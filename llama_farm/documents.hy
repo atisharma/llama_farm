@@ -5,9 +5,10 @@ Functions that produce lists of Document objects.
 (require hyrule.argmove [-> ->>])
 (require hyrule.control [unless])
 
+(import .logger [logging])
+
 (import os)
 (import magic)
-(import logging)
 
 (import functools [partial])
 (import itertools [chain repeat])
@@ -104,7 +105,7 @@ Functions that produce lists of Document objects.
                   (in "/.venv/" fname)
                   (in "/__pycache__/" fname))
               (do
-                (logging.error f"Ignored: {mime} {fname}")
+                (logging.warning f"Ignored: {mime} {fname}")
                 [False])
               (do
                 (let [disp-str f"Loading {mime} \"{fname}\""]
@@ -115,11 +116,11 @@ Functions that produce lists of Document objects.
                       "text/plain" (textfile->docs fname)
                       otherwise (unstructured->docs fname))
                   (except [UnicodeDecodeError]
-                    (logging.error f"Failed to decode {fname} using utf-8: ignored.")
+                    (logging.warning f"Failed to decode {fname} using utf-8: ignored.")
                     [False])
                   (except [e [TypeError]]
-                    (logging.error f"Failed to embed or decode {fname}: ignored.")
-                    (logging.error (repr e))
+                    (logging.warning f"Failed to embed or decode {fname}: ignored.")
+                    (logging.warning (repr e))
                     [False])
                   (except [e [Exception]]
                     (logging.error f"Failed with unknown error {fname}: ignored.")
