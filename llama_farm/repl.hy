@@ -3,12 +3,13 @@ The main REPL where we chat to the bot and issue commands.
 "
 
 ;; TODO: whisper
-;; TODO: eval Hy in user's text
+;; TODO: eval Hy in user's text, maybe
 
 (require hyrule.argmove [-> ->> as->])
 (require hyrule.control [unless])
 
-(import logging)
+(import .logger [logging])
+
 (import os)
 (import itertools [chain repeat])
 (import datetime [datetime])
@@ -31,9 +32,6 @@ The main REPL where we chat to the bot and issue commands.
 (defn run []
   "Launch the REPL, which takes user input, parses
 it, and passes it to the appropriate action."
-  (logging.basicConfig :filename (config "logfile")
-                       :level logging.WARNING
-                       :encoding "utf-8")
   (logging.info f"Starting repl at {(.isoformat (datetime.today))}")
   (banner)
   (info "Enter **/help** for help\n")
