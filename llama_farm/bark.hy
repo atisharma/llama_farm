@@ -30,7 +30,6 @@ See bark voices at https://suno-ai.notion.site/8b8e8749ed514b0cbf3f699013548683?
         (generate-audio :history-prompt voice :silent True)
         (_sanitize-audio)
         (queue.put))))
-    ;(print "bark sent" text)))
 
 (defn _bark-sentences [sentences * queue [buffer ""] [n 80] [voice "v2/en_speaker_6"]]
   "Speak groups of sentences of about n chars."
@@ -52,7 +51,7 @@ See bark voices at https://suno-ai.notion.site/8b8e8749ed514b0cbf3f699013548683?
     (_bark-fragment buffer :queue queue :voice voice)))
 
 (defn speak [text [voice "v2/en_speaker_6"]]
-  "Speak a longer passage of text."
+  "Speak a longer passage of text. Blocks until complete."
   (setv (get os.environ "TOKENIZERS_PARALLELISM") "false") ; since we're forking.
   (let [audio-queue (Queue)
         audio-loop (Process :target _audio-loop :args #(audio-queue SAMPLE_RATE))]

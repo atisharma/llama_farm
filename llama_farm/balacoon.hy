@@ -3,7 +3,6 @@ Wrap balacoon TTS and send to audio.
 
 Balacoon is pretty light.
 Models and speakers available at https://huggingface.co/balacoon/tts
-
 "
 
 (import os)
@@ -17,11 +16,8 @@ Models and speakers available at https://huggingface.co/balacoon/tts
 
 
 (defn speak [text [model "en_us_cmuartic_jets_cpu.addon"] [speaker None]]
-  "Speak a longer passage of text."
+  "Speak a longer passage of text. Blocks until complete."
   (setv (get os.environ "TOKENIZERS_PARALLELISM") "false") ; since we're forking.
-  (hf-hub-download :repo_id "balacoon/tts"
-                   :filename model
-                   :local-dir "balacoon")
   (let [tts (TTS f"balacoon/{model}")
         speaker (or speaker (get (tts.get-speakers) -1))
         audio-queue (Queue)
