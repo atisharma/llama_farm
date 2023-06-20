@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.0] - 2023-06-20
+
+### Bug Fixes
+
+- Summaries with context_length
+- Spewing warnings / logging in documents
+- Logging
+- Reflect changes in other modules
+
+### Features
+
+- Chat->topic
+- Update speech
+
+## [0.5.1] - 2023-06-16
+
+### Bug Fixes
+
+- Sort out the config file for voices
+
+## [0.5.0] - 2023-06-16
+
+### Bug Fixes
+
+- File summaries
+
+### Features
+
+- Balacoon TTS
+
 ## [0.4.1] - 2023-06-15
 
 ### Bug Fixes
