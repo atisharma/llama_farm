@@ -22,3 +22,4 @@ unstructured
 youtube-transcript-api
 protobuf==3.20.1
 tiktoken
+lorem
