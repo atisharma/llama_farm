@@ -23,7 +23,7 @@ extract the relevant parts.
 
 ### Internet sources
 You can ask it questions with access to YouTube, arXiv, wikipedia,
-URLS and text files.
+URLs and text files.
 
 ### Compatibility and technology
 Llama-farm speaks to any OpenAI-compatible API:
@@ -36,8 +36,8 @@ Llama-farm speaks to any OpenAI-compatible API:
 The oobabooga solution with exllama is recommended because it's fast
 and is what gets tested.
 
-Llama-farm uses microsoft/guidance and hwchase17/langchain for some
-abstractions (see limitations).
+Llama-farm uses hwchase17/langchain for the vectordb abstraction and
+splitting of long documents (see limitations).
 
 The storage is backed by [faiss](https://github.com/facebookresearch/faiss). The wrapper to [chromadb](https://github.com/chroma-core/chroma) is
 written but is not currently used or tested.
@@ -49,12 +49,14 @@ The help text is [here](llama_farm/help.md).
 
 [See the changelog here](Changelog.md)
 
-**BREAKING CHANGE**: the default embedding for the vector db changed in 0.6.0
+**BREAKING CHANGES**:
+- the default embedding for the vector db changed in 0.6.0
 to allow longer text fragments. You'll either need to replace your old vector
 dbs (under `storage/`) or change back the embedding and chunk sizes under the
 storage section in the config file. Other format changes in the config file
 need to be reflected in your config also (see [the example
 config](config.toml.example)).
+- Also, the config file format has changed since 0.7.0, since using the OpenAI API directly.
 
 ### Setup
 Copy the `config.toml.example` to `config.toml`.
@@ -94,8 +96,7 @@ works surprisingly well with WizardLM-7B!  But see limitations below.
 - The context length limitation of Llama models (2048 tokens) is half
   or less that of OpenAI's models.
 - The OpenAI API (and compatible ones) do not expose a number of
-  capabilities that local models have. The full power of the guidance
-  library is therefore not available.
+  capabilities that local models have.
 - The `ingest` command (from command line or within the chat) can't be
   used concurrently - one instance will overwrite the changes of
   another.
@@ -105,10 +106,9 @@ works surprisingly well with WizardLM-7B!  But see limitations below.
 - Document recollection from the store is rather fragmented. It may be
   better to use similarity search just as a signpost to the original
   document, then summarize the document as context.
-- Continue to use guidance, or use own API calls, since quite simple?
 - Reconsider store document size, since summarization works well
 - Define tools for freeform memory access rather than /command syntax
 - Define JSON API templates for other web tools
 - Self-chat between bots with intention/task injection; see e.g. operand/agency
 - Use of tools (see tools.hy)
-- Task planning (see tasks.hy)
+- Task planning? (see tasks.hy)

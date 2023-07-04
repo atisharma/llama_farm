@@ -1,6 +1,11 @@
 (require hyrule.argmove [-> ->>])
 (require hyrule.control [unless])
 
+(import hyrule [inc dec rest butlast starmap distinct])
+
+(import functools [partial cache lru-cache])
+(import itertools *)
+
 (import os)
 (import json)
 (import re)
@@ -22,6 +27,15 @@
 
 (defclass ResponseError [Exception])
 
+
+;;; -----------------------------------------------------------------------------
+
+(defn first [xs]
+  (next (iter xs)))
+
+(defn last [xs]
+  (when xs
+    (next (reversed xs))))
 
 ;;; -----------------------------------------------------------------------------
 ;;; config functions
@@ -149,10 +163,13 @@
 (defn assistant [content]
   (msg "assistant" content "assistant"))
 
-(defn inject [system-message chat-history]
-  "Prepend the chat history with the system message."
-  (+ [(system system-message)]
-     chat-history))
+(defn prepend [x #^list l]
+  "Prepend x at the front of list l."
+  (+ [x] l))
+
+(defn append [x #^list l]
+  "Append x to list l."
+  (+ l [x]))
 
 (defn format-chat-history [chat-history]
   "Format the chat history for saving to the store."

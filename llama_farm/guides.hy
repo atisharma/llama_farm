@@ -1,4 +1,7 @@
 "
+**** ---- THIS WILL BE REMOVED ---- ****
+**** ----     DO NOT USE       ---- ****
+
 Prompts for use with guidance.
 
 The higher-order functions herein return functions as defined by their templates.

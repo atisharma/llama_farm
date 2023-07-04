@@ -11,7 +11,10 @@ Parse user input and dispatch the resulting operation internally.
 
 (import llama-farm [store chat])
 (import .state [chat-store knowledge-store])
-(import .utils [params config bots slurp is-url msg system user inject])
+(import .utils [params config bots
+                slurp is-url
+                msg system user
+                append prepend])
 (import .texts [now->text url->text arxiv->text youtube->text wikipedia->text])
 (import .interface [banner
                     bot-color
@@ -121,70 +124,68 @@ Parse user input and dispatch the resulting operation internally.
       ;;
       ;; commands that give a reply
       (= command "/ask") (chat.process chat-history
-                                      user-message
-                                      (chat.over-db bot
-                                                    user-message
-                                                    args
-                                                    (inject system-prompt chat-history)
-                                                    :db knowledge-store
-                                                    :sources (:show-sources (config "storage") False)))
-      (= command "/arxiv") (chat.process chat-history
-                                        user-message
-                                        (chat.over-arxiv bot
-                                                         user-message
-                                                         args
-                                                         (inject system-prompt chat-history)))
-      (= command "/wikipedia") (chat.process chat-history
-                                            user-message
-                                            (chat.over-wikipedia bot
-                                                                 user-message
-                                                                 args
-                                                                 (inject system-prompt chat-history)))
-      (= command "/file") (chat.process chat-history
                                        user-message
-                                       (chat.over-file bot
-                                                       user-message
-                                                       args
-                                                       (inject system-prompt chat-history)))
-      (= command "/url") (chat.process chat-history
-                                      user-message
-                                      (chat.over-url bot
+                                       (chat.over-db bot
                                                      user-message
                                                      args
-                                                     (inject system-prompt chat-history)))
+                                                     (prepend (system system-prompt) chat-history)
+                                                     :db knowledge-store
+                                                     :sources (:show-sources (config "storage") False)))
+      (= command "/arxiv") (chat.process chat-history
+                                         user-message
+                                         (chat.over-arxiv bot
+                                                          user-message
+                                                          args
+                                                          (prepend (system system-prompt) chat-history)))
+      (= command "/wikipedia") (chat.process chat-history
+                                             user-message
+                                             (chat.over-wikipedia bot
+                                                                  user-message
+                                                                  args
+                                                                  (prepend (system system-prompt) chat-history)))
+      (= command "/file") (chat.process chat-history
+                                        user-message
+                                        (chat.over-file bot
+                                                        user-message
+                                                        args
+                                                        (prepend (system system-prompt) chat-history)))
+      (= command "/url") (chat.process chat-history
+                                       user-message
+                                       (chat.over-url bot
+                                                      user-message
+                                                      args
+                                                      (prepend (system system-prompt) chat-history)))
       (= command "/youtube") (chat.process chat-history
-                                          user-message
-                                          (chat.over-youtube bot
-                                                             user-message
-                                                             args
-                                                             (inject system-prompt chat-history)))
+                                           user-message
+                                           (chat.over-youtube bot
+                                                              user-message
+                                                              args
+                                                              (prepend (system system-prompt) chat-history)))
       ;;
       ;; summarization
-      (= command "/summ-file") (try
-                                 (chat.process chat-history
-                                              user-message
-                                              (chat.over-summarize-file bot
-                                                                        user-message
-                                                                        args
-                                                                       (inject system-prompt chat-history)))
-                                 (except [e [MissingSchema ConnectionError]]
-                                   (error f"I can't get anything from [{args}]({args})")))
+      (= command "/summ-file") (chat.process chat-history
+                                             user-message
+                                             (chat.over-summarize-file bot
+                                                                       user-message
+                                                                       args
+                                                                       (prepend (system system-prompt) chat-history)))
+                               
       (= command "/summ-url") (try
                                 (chat.process chat-history
-                                             user-message
-                                             (chat.over-summarize-url bot
-                                                                      user-message
-                                                                      args
-                                                                      (inject system-prompt chat-history)))
+                                              user-message
+                                              (chat.over-summarize-url bot
+                                                                       user-message
+                                                                       args
+                                                                       (prepend (system system-prompt) chat-history)))
                                 (except [e [MissingSchema ConnectionError]]
                                   (error f"I can't get anything from [{args}]({args})")))
       (= command "/summ-youtube") (try
                                     (chat.process chat-history
-                                                 user-message
-                                                 (chat.over-summarize-youtube bot
-                                                                              user-message
-                                                                              args
-                                                                              (inject system-prompt chat-history)))
+                                                  user-message
+                                                  (chat.over-summarize-youtube bot
+                                                                               user-message
+                                                                               args
+                                                                               (prepend (system system-prompt) chat-history)))
                                     (except [TranscriptsDisabled]
                                       (error f"I can't find a transcript for [{args}](https://www.youtube.com/watch/?v={args})")))
       ;;
@@ -219,7 +220,7 @@ Parse user input and dispatch the resulting operation internally.
       (= command "/bot") (do (set-bot args) (setv bot-name (.capitalize bot)))
       (= command "/bots") (_list-bots)
       (in command ["/history" "/hist"]) (print-chat-history chat-history
-                                                            :tokens (chat.token-count (inject system-prompt chat-history)))
+                                                            :tokens (chat.token-count (prepend (system system-prompt) chat-history)))
       ;;
       ;; chat memory management
       (= command "/topic") (if args
@@ -247,5 +248,5 @@ Parse user input and dispatch the resulting operation internally.
               (print-message reply-message margin)
               (chat.process chat-history user-message reply-message)))
       ;;
-    (status-line f"[{(bot-color bot)}]{bot-name}[default] | [green]{(chat.token-count (inject system-prompt chat-history))} tkns | {current-topic}")
+    (status-line f"[{(bot-color bot)}]{bot-name}[default] | [green]{(chat.token-count (prepend (system system-prompt) chat-history))} tkns | {current-topic}")
     chat-history))

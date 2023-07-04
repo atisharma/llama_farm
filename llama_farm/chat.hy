@@ -7,10 +7,14 @@ Functions that return messages or are associated with chat management.
 
 (import shlex)
 
-(import llama-farm [store guides summaries])
+(import llama-farm [store generate summaries])
 (import .state [chat-store knowledge-store])
 (import .documents [tokenizer token-count chat->docs])
-(import .utils [config params file-append slurp format-docs format-chat-history inject msg user system])
+(import .utils [config params
+                file-append slurp
+                format-docs format-chat-history
+                prepend append
+                msg user system])
 (import .texts [now->text youtube-meta->text wikipedia->text url->text youtube->text])
 (import .interface [get-margin
                     print-message
@@ -33,7 +37,7 @@ Functions that return messages or are associated with chat management.
         max-tokens (:max-tokens (params bot) 50)
         truncation-length (- context-length max-tokens)
         ; need enough space to provide whole chat + system msg + new text
-        token-length (+ max-tokens (token-count (inject system-prompt chat-history)))
+        token-length (+ max-tokens (token-count (prepend (system system-prompt) chat-history)))
         ;; assume chat length is multiple of 2 (else we lose order of response)
         cut-length (* 2 (// (len chat-history) 4))]
     (if (> token-length truncation-length)
@@ -105,29 +109,15 @@ Functions that return messages or are associated with chat management.
 (defn reply [bot chat-history user-message system-prompt] ; -> msg
   "Simply reply to the chat with a message."
   (with [c (spinner-context f"{(.capitalize bot)} is thinking..." :style f"italic {(bot-color bot)}")]
-    (let [model (guides.model bot)
-          program (guides.chat->reply chat-history user-message system-prompt)
-          output (try
-                   (program :llm model)
-                   (except [ValueError]
-                     (error f"Null response from {(.capitalize bot)}.")
-                     {}))
-          reply (:result output "")]
-      (msg "assistant" reply bot))))
+    (let [messages (->> chat-history (prepend (system system-prompt)) (append user-message))]
+      (generate.chat bot messages))))
 
 ;; TODO: call tools if appropriate
 (defn reply-over-text [bot chat-history user-message text] ; -> msg
   "Reply to the chat and provided context with a message. Text should already be summarized."
   (with [c (spinner-context f"{(.capitalize bot)} is thinking...")]
-    (let [model (guides.model bot)
-          program (guides.text&chat->reply chat-history)
-          output (try
-                   (program :query (:content user-message) :input text :llm model)
-                   (except [ValueError]
-                     (error f"Null response from {(.capitalize bot)}.")
-                     {}))
-          reply (:result output "")]
-      (msg "assistant" reply bot))))
+    (let [output (generate.text&msgs->reply bot chat-history text (:content user-message))]
+      (msg "assistant" output bot))))
 
 ;;; -----------------------------------------------------------------------------
 ;;; Chat over text functions: query ... -> message pair
@@ -168,10 +158,11 @@ Functions that return messages or are associated with chat management.
     (over-text bot user-message args chat-history :text text)))
 
 (defn over-file [bot user-message args chat-history]
-  (let [[fname #* rest-args] (shlex.split args)
-        query (.join " " rest-args)
+  (let [[fname _ query] (.partition args " ")
         text (slurp fname)]
-    (over-text bot user-message query chat-history :text text)))
+    (if text
+      (over-text bot user-message query chat-history :text text)
+      (error f"I can't find {fname}, or it's empty."))))
 
 (defn over-arxiv [bot user-message args chat-history]
   (let [[topic _ query] (.partition args " ")

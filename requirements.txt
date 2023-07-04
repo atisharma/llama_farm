@@ -3,7 +3,6 @@ hyrule
 requests
 tomli
 langchain
-guidance
 openai
 faiss-cpu
 sentence-transformers

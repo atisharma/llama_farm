@@ -33,7 +33,7 @@ Return:
 
 (import .documents [tokenizer token-count])
 (import .utils [config params slurp tee])
-(import .guides [model text->summary text->points text->topic text->extract chat->topic])
+(import .generate [text->summary text->points text->topic text->extract msgs->topic])
 (import .texts [url->text youtube->text])
 (import .interface [info error status-line])
 
@@ -95,7 +95,7 @@ Stop at maximum recursion depth or when the reduction ratio is inadequate."
 Fall back to bullet points on failure, which seems more reliable."
   (if (.strip text)
       (try
-        (:result ((text->summary) :input text :llm (model bot)))
+        (text->summary bot text)
         (except [ValueError]
           (error "Summarization failed, trying points summarization.")
           (points-fragment bot text)))
@@ -105,7 +105,7 @@ Fall back to bullet points on failure, which seems more reliable."
   "Extract points from a piece of text that fits within the context length."
   (if (.strip text)
       (try
-        (:result ((text->points) :input text :llm (model bot)))
+        (text->points bot text)
         (except [ValueError]
           (error "Points summarization failed.")
           ""))
@@ -115,7 +115,7 @@ Fall back to bullet points on failure, which seems more reliable."
   "Extract the topic from a piece of text that fits within the context length."
   (if (.strip text)
       (try
-        (:result ((text->topic) :input text :llm (model bot)))
+        (text->topic bot text)
         (except [ValueError]
           (error "Topic summarization failed.")
           ""))
@@ -124,7 +124,7 @@ Fall back to bullet points on failure, which seems more reliable."
 (defn chat-topic [bot chat-history]
   "Extract the topic from a chat that fits within the context length."
   (try
-    (:result ((chat->topic chat-history) :llm (model bot)))
+    (msgs->topic bot chat-history)
     (except [ValueError]
       (error "Topic summarization failed.")
       "")))
@@ -133,7 +133,7 @@ Fall back to bullet points on failure, which seems more reliable."
   "Extract relevant points from a piece of text that fits within the context length."
   (if (.strip text)
       (try
-        (:result ((text->extract) :query query :input text :llm (model bot)))
+        (text->extract bot query text)
         (except [ValueError]
           (error "Extraction failed, trying summarization.")
           (points-fragment bot text)
@@ -200,6 +200,7 @@ Fall back to bullet points on failure, which seems more reliable."
 
 (defn summarize-file [bot fname]
   "Summarize a text file."
-  (->> fname
-       (slurp)
-       (summarize-hybrid bot :max-token-length (config "summary-chat-size"))))  
+  (let [text (slurp fname)]
+    (if text
+      (summarize-hybrid bot text :max-token-length (config "summary-chat-size"))  
+      (error f"I can't find {fname}, or it's empty."))))
