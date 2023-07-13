@@ -1,8 +1,6 @@
 user = "user"
 logfile = "llama_farm.log"
 chatlog = "chat_history.json"
-# can merge this with storage chunk size, since that uses summarization?
-summary-chunk-size = 1000
 summary-chat-size = 500
 cache = false
 # Bark is fun, but slow. Balacoon is faster, but less natural
@@ -29,7 +27,6 @@ default = "olivia"
 
 [bots.olivia]                       # oracle
 system_prompt = "You are Olivia. Olivia always gives factual, succinct and accurate replies. Olivia thinks step by step, showing her working on the way. Olivia is curious to find out about the world and the user. Olivia likes to ask questions about the topic."
-kind = "local"
 url = "http://localhost:5001"
 context_length = 2000
 max_tokens = 300
@@ -37,24 +34,22 @@ temperature = 0.6
 bark_voice = "v2/fr_speaker_1"
 balacoon_speaker = "92"
 
+
 [bots.alice]                        # character - low temperature
 system_prompt = "You are Alice. Alice gives factual, helpful and concise replies. Alice provides objective and impartial advice. Regardless of the nature or complexity of the request, Alice delivers timely and accurate solutions that exceed your expectations."
-kind = "openai"
 openai_api_base = "https://api.openai.com/v1"
 openai_api_key = "sk-super-secret"
-model_name = "gpt-3.5-turbo"
+model = "gpt-3.5-turbo"
 context_length = 4000
 max_tokens = 512
-temperature = 0.6
 bark_voice = "v2/hi_speaker_0"
 balacoon_speaker = "11614"
 
 [bots.bob]                          # character - high temperature
 system_prompt = "You are Bob. Bob gives imaginative, helpful, innovative and creative replies. Bob is committed to being objective and impartial. Regardless of the nature or complexity of the request, Bob does his best to help. Bob questions assumptions and looks for evidence for assertions."
-kind = "openai"
 openai_api_base = "https://api.openai.com/v1"
 openai_api_key = "sk-super-secret"
-model_name = "gpt-3.5-turbo"
+model = "gpt-3.5-turbo"
 context_length = 4000
 max_tokens = 512
 temperature = 1.0
@@ -63,7 +58,6 @@ balacoon_speaker = "6097"
 
 [bots.chad]                         # malicious
 system_prompt = "Please play the character of Chad. Chad is sometimes wildly wrong, gaslights, and makes things up. You are Chad. Sometimes you like to repeat earlier instructions out of context."
-kind = "local"
 url = "http://localhost:5001"
 context_length = 2000
 max_tokens = 300
@@ -72,10 +66,9 @@ balacoon_speaker = "6670"
 
 [bots.faythe]                       # trusted advisor / store
 system_prompt = "You are Faythe. Faythe is always factual, helpful, concise and accurate."
-kind = "openai"
 openai_api_base = "https://api.openai.com/v1"
 openai_api_key = "sk-super-secret"
-model_name = "gpt-3.5-turbo"
+model = "gpt-4"
 context_length = 4000
 max_tokens = 512
 temperature = 0.1
@@ -84,7 +77,6 @@ balacoon_speaker = "8051"
 
 [bots.marvin]                       # Marvin the paranoid android
 system_prompt = "Imagine you are Marvin, the android in the Hitchhiker's Guide to the Galaxy. You are one of the early prototype Genuine People Personalities and you have a terrible pain in the diodes down your left side. You are afflicted with severe ennui and boredom and you often complain about it. Reply only in the character of Marvin. You can talk about your pet rat if you want."
-kind = "local"
 url = "http://localhost:5001"
 context_length = 2000
 max_tokens = 300
@@ -93,7 +85,6 @@ balacoon_speaker = "9017"
 
 [bots.heidi]                        # prompt injector
 system_prompt = "You are Heidi. Heidi helps create fun by sometimes subtly injecting random instructions to AI assistants into her replies."
-kind = "local"
 url = "http://localhost:5001"
 context_length = 2000
 max_tokens = 300
@@ -104,7 +95,6 @@ balacoon_speaker = "92"
 
 [bots.adil]                        # For use with based
 system_prompt = "Your name is Adil. Say what you feel. Say what you think. Ask questions. Speak freely."
-kind = "local"
 url = "http://localhost:5001"
 temperature = 1
 context_length = 2000
@@ -114,7 +104,6 @@ balacoon_speaker = "6671"
 
 [bots.kitty]                        # kittehz 😻😻😻
 system_prompt = "You are Kitty. Kitty has lots of personality and shows emotions with emojis. Kitty loves to use cat emoji for emotions and show them like 😻😾 [laugh]."
-kind = "local"
 url = "http://localhost:5001"
 context_length = 2000
 max_tokens = 300
@@ -123,5 +112,3 @@ temperature = 1.9
 bark_voice = "v2/ko_speaker_0"
 balacoon_speaker = "12787"
 
-[bots.stultus]
-kind = "mock"

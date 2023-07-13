@@ -163,14 +163,14 @@ Parse user input and dispatch the resulting operation internally.
                                                               (prepend (system system-prompt) chat-history)))
       ;;
       ;; summarization
-      (= command "/summ-file") (chat.process chat-history
+      (= command "/file-summ") (chat.process chat-history
                                              user-message
                                              (chat.over-summarize-file bot
                                                                        user-message
                                                                        args
                                                                        (prepend (system system-prompt) chat-history)))
                                
-      (= command "/summ-url") (try
+      (= command "/url-summ") (try
                                 (chat.process chat-history
                                               user-message
                                               (chat.over-summarize-url bot
@@ -179,7 +179,7 @@ Parse user input and dispatch the resulting operation internally.
                                                                        (prepend (system system-prompt) chat-history)))
                                 (except [e [MissingSchema ConnectionError]]
                                   (error f"I can't get anything from [{args}]({args})")))
-      (= command "/summ-youtube") (try
+      (= command "/youtube-summ") (try
                                     (chat.process chat-history
                                                   user-message
                                                   (chat.over-summarize-youtube bot

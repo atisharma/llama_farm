@@ -45,9 +45,9 @@ The usual readline shortcuts should be available.
 
 ### Summarize external sources
 
-- **/summ-youtube youtube-id**      Summarize a Youtube video
-- **/summ-url https://example.com** Summarize example.com
-- **/summ-file filename**           Summarize a text file
+- **/youtube-summ youtube-id**      Summarize a Youtube video
+- **/url-summ https://example.com** Summarize example.com
+- **/file-summ filename**           Summarize a text file
 
 ### Knowledge management
 

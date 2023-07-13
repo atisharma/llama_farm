@@ -4,13 +4,17 @@ Chat management functions.
 
 (require hyrule.argmove [-> ->>])
 
-(import openai [ChatCompletion Edit])
+(import openai [ChatCompletion])
 
 (import llama-farm [texts utils])
-(import .utils [first last
-                params config
-                append prepend
-                msg assistant system])
+(import llama-farm.documents [token-count])
+(import llama-farm.utils [first last
+                          params config
+                          append prepend
+                          msg assistant system])
+
+
+(defclass GenerationError [Exception])
 
 
 (defn user [content]
@@ -32,42 +36,30 @@ Chat management functions.
 
 ;;; -----------------------------------------------------------------------------
 
+(defn respond [bot messages #** kwargs]
+  "Reply to a list of messages and return just content.
+The messages should already have the standard roles."
+  (if (> (token-count messages) (:context-length (params bot) 2000))
+      (raise (GenerationError f"Messages too long for context: {(token-count messages)}."))
+      (let [defaults {"api_key" "n/a"
+                      "model" "gpt-3.5-turbo"}
+            p (api-params bot)
+            response (ChatCompletion.create
+                       :messages (clean-messages messages)
+                       #** (| defaults p kwargs))]
+        (-> response.choices
+            (first)
+            (:message)
+            (:content)))))
+
 (defn edit [bot text instruction #** kwargs]
   "Follow an instruction.
 `input`: The input text to use as a starting point for the edit.
 `instruction`: how the model should edit the prompt."
-  (let [max_tokens (config "max_tokens")
-        p (api-params bot)
-        key (.pop p "api_key" "n/a")
-        chat-model (.pop p "chat_model" "gpt-3.5-turbo")
-        completion-model (.pop p "completion_model"  "text-davinci-edit-001")
-        response (Edit.create
-                   :input text
-                   :instruction instruction
-                   :model completion-model
-                   :api_key key
-                   #** (| p kwargs))]
-    (-> response.choices
-        (first)
-        (:text))))
-
-(defn respond [bot messages #** kwargs]
-  "Reply to a list of messages and return just content.
-The messages should already have the standard roles."
-  (let [max_tokens (config "max_tokens")
-        p (api-params bot)
-        key (.pop p "api_key" "n/a")
-        chat-model (.pop p "chat_model" "gpt-3.5-turbo")
-        completion-model (.pop p "completion_model"  "text-davinci-edit-001")
-        response (ChatCompletion.create
-                   :messages (clean-messages messages)
-                   :model chat-model
-                   :api_key key
-                   #** (| {"max_tokens" max_tokens} p kwargs))]
-    (-> response.choices
-        (first)
-        (:message)
-        (:content))))
+  (respond bot
+           [(system instruction)
+            (user text)]
+           #** kwargs))
 
 (defn chat [bot messages #** kwargs] ; -> message
   "An assistant response (message) to a list of messages.
@@ -111,9 +103,24 @@ The text should not be so long as to cause context length problems, so summarise
 Consider the following additional context before responding:
 {context}")]))
 
-;;; -----------------------------------------------------------------------------
-;;; Prompts over paragraphs of text -> text
-;;; -----------------------------------------------------------------------------
+(defn complete-json [template instruction context [max-tokens 600]]
+  "Fill in a JSON template according to context. Return list, dict or None.
+JSON completion is a bit unreliable, depending on the model."
+  (let [messages [(system "You will be given a JSON template to complete. You must stick very closely to the format of the template.")
+                  (system instruction)
+                  (user context)
+                  (system "Below is the JSON template to complete.")
+                  (user template)
+                  (system "Now, complete the template. Give only valid JSON, no other text, context or explanation.")]
+        response (respond messages :max-tokens max-tokens)
+        match (re.search r"[^{\[]*([\[{].*[}\]])" response :flags re.S)]
+    (try
+      (when match
+        (-> match
+            (.groups)
+            (first)
+            (json.loads)))
+      (except [json.decoder.JSONDecodeError]))))
 
 (defn text->topic [bot text]
   "Create a topic summary from text."
