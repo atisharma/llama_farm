@@ -1,5 +1,5 @@
-hy
-hyrule
+hy==0.27.0
+hyrule==0.4.0
 requests
 tomli
 langchain
