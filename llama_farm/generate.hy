@@ -6,6 +6,8 @@ Chat management functions.
 
 (import openai [ChatCompletion])
 
+(import tenacity [retry stop-after-attempt wait-random-exponential])
+
 (import llama-farm [texts utils])
 (import llama-farm.documents [token-count])
 (import llama-farm.utils [first last
@@ -36,7 +38,8 @@ Chat management functions.
 
 ;;; -----------------------------------------------------------------------------
 
-(defn respond [bot messages #** kwargs]
+(defn [(retry :wait (wait-random-exponential :min 0.5 :max 30)
+              :stop (stop-after-attempt 6))] respond [bot messages #** kwargs]
   "Reply to a list of messages and return just content.
 The messages should already have the standard roles."
   (if (> (token-count messages) (:context-length (params bot) 2000))
