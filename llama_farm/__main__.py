@@ -1,7 +1,7 @@
 import hy
 import sys
 
-from llama-farm.repl import run
+from llama_farm.repl import run
 
 if __name__ == "__main__":
  sys.exit(run() or 0)
