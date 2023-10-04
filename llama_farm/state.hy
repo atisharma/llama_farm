@@ -4,7 +4,7 @@ Shared state maintained in the vector stores.
 
 (import os)
 
-(import .utils [config])
+(import llama-farm.utils [config])
 (import llama-farm [store])
 
 

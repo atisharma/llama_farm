@@ -163,11 +163,11 @@
 (defn assistant [content]
   (msg "assistant" content "assistant"))
 
-(defn prepend [x #^list l]
+(defn prepend [x l]
   "Prepend x at the front of list l."
   (+ [x] l))
 
-(defn append [x #^list l]
+(defn append [x l]
   "Append x to list l."
   (+ l [x]))
 

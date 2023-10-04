@@ -5,7 +5,7 @@ Functions that produce lists of Document objects.
 (require hyrule.argmove [-> ->>])
 (require hyrule.control [unless])
 
-(import .logger [logging])
+(import llama-farm.logger [logging])
 
 (import os)
 (import magic)
@@ -24,9 +24,9 @@ Functions that produce lists of Document objects.
 (import langchain.utilities [WikipediaAPIWrapper])
 (import langchain.schema [Document])
 
-(import .utils [config format-chat-history])
-(import .interface [track spinner-context])
-(import .texts [youtube->text url->text now->text])
+(import llama-farm.utils [config format-chat-history])
+(import llama-farm.interface [track spinner-context])
+(import llama-farm.texts [youtube->text url->text now->text])
 
 
 (setv ignored-extensions ["log" "dat" "aux" "icon" "tikz"

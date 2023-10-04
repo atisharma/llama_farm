@@ -31,11 +31,11 @@ Return:
 
 (import langchain.text-splitter [RecursiveCharacterTextSplitter])
 
-(import .documents [tokenizer token-count])
-(import .utils [config params slurp tee])
-(import .generate [text->summary text->points text->topic text->extract msgs->topic])
-(import .texts [url->text youtube->text])
-(import .interface [info error status-line])
+(import llama-farm.documents [tokenizer token-count])
+(import llama-farm.utils [config params slurp tee])
+(import llama-farm.generate [text->summary text->points text->topic text->extract msgs->topic])
+(import llama-farm.texts [url->text youtube->text])
+(import llama-farm.interface [info error status-line])
 
 
 ;;; -----------------------------------------------------------------------------

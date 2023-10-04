@@ -25,8 +25,8 @@ task:
 (import guidance)
 (import rich.tree [Tree])
 
-(import .guides [model format-task manage-task divide-task revise-task attempt-task judge-task])
-(import .utils [bots short-id indent])
+(import llama-farm.guides [model format-task manage-task divide-task revise-task attempt-task judge-task])
+(import llama-farm.utils [bots short-id indent])
 
 
 (defn debullet [markdown-list] ; -> list[str]

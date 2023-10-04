@@ -17,7 +17,7 @@ See bark voices at https://suno-ai.notion.site/8b8e8749ed514b0cbf3f699013548683?
 (import bark [SAMPLE_RATE generate-audio preload-models])
 (import nltk.tokenize [sent-tokenize])
 
-(import .audio [_audio-loop _sanitize-audio])
+(import llama-farm.audio [_audio-loop _sanitize-audio])
 
 
 ; import early

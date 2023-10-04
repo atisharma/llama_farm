@@ -16,17 +16,17 @@ The main REPL where we chat to the bot and issue commands.
 (import signal [signal SIGINT])
 (import readline)
 
-(import .utils [config rlinput user file-append barf])
-(import .parser [parse set-bot bot])
-(import .chat [commit-chat])
-(import .interface [banner
-                    clear
-                    console
-                    format-msg
-                    get-margin
-                    info
-                    error
-                    exception])
+(import llama-farm.utils [config rlinput user file-append barf])
+(import llama-farm.parser [parse set-bot bot])
+(import llama-farm.chat [commit-chat])
+(import llama-farm.interface [banner
+                              clear
+                              console
+                              format-msg
+                              get-margin
+                              info
+                              error
+                              exception])
 
 
 (defn run []

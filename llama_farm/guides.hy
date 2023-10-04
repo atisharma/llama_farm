@@ -54,8 +54,8 @@ DATA MODEL
 (import lorem)
 
 (import llama-farm [texts])
-(import .tool-parser [describe command-parse])
-(import .utils [params config])
+(import llama-farm.tool-parser [describe command-parse])
+(import llama-farm.utils [params config])
 
 
 (defn model [bot]

@@ -12,7 +12,7 @@ Models and speakers available at https://huggingface.co/balacoon/tts
 (import nltk.tokenize [sent-tokenize])
 (import huggingface-hub [hf-hub-download])
 
-(import .audio [_audio-loop _sanitize-audio])
+(import llama-farm.audio [_audio-loop _sanitize-audio])
 
 
 (defn speak [text [model "en_us_cmuartic_jets_cpu.addon"] [speaker None]]

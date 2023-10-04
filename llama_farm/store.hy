@@ -38,9 +38,9 @@ optional k value to specify the number of results.
 (import langchain.vectorstores [Chroma FAISS])
 (import langchain.docstore.in_memory [InMemoryDocstore])
 
-(import .utils [config hash-id])
-(import .documents [->docs url->docs])
-(import .interface [console spinner-context])
+(import llama-farm.utils [config hash-id])
+(import llama-farm.documents [->docs url->docs])
+(import llama-farm.interface [console spinner-context])
 
 
 (setv embedding (HuggingFaceEmbeddings :model-name (config "storage" "embedding")))

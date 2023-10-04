@@ -10,29 +10,29 @@ Parse user input and dispatch the resulting operation internally.
 (import logging)
 
 (import llama-farm [store chat])
-(import .state [chat-store knowledge-store])
-(import .utils [params config bots
-                slurp is-url
-                msg system user
-                append prepend])
-(import .texts [now->text url->text arxiv->text youtube->text wikipedia->text])
-(import .interface [banner
-                    bot-color
-                    clear
-                    clear-status-line
-                    console
-                    error
-                    get-margin
-                    info
-                    print-chat-history
-                    print-docs
-                    print-message
-                    print-sources
-                    set-width
-                    spinner-context
-                    status-line
-                    tabulate
-                    toggle-markdown])
+(import llama-farm.state [chat-store knowledge-store])
+(import llama-farm.utils [params config bots
+                          slurp is-url
+                          msg system user
+                          append prepend])
+(import llama-farm.texts [now->text url->text arxiv->text youtube->text wikipedia->text])
+(import llama-farm.interface [banner
+                              bot-color
+                              clear
+                              clear-status-line
+                              console
+                              error
+                              get-margin
+                              info
+                              print-chat-history
+                              print-docs
+                              print-message
+                              print-sources
+                              set-width
+                              spinner-context
+                              status-line
+                              tabulate
+                              toggle-markdown])
 
 (import requests.exceptions [MissingSchema ConnectionError])
 (import youtube-transcript-api._errors [TranscriptsDisabled])

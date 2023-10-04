@@ -8,20 +8,20 @@ Functions that return messages or are associated with chat management.
 (import shlex)
 
 (import llama-farm [store generate summaries])
-(import .state [chat-store knowledge-store])
-(import .documents [tokenizer token-count chat->docs])
-(import .utils [config params
-                file-append slurp
-                format-docs format-chat-history
-                prepend append
-                msg user system])
-(import .texts [now->text youtube-meta->text wikipedia->text url->text youtube->text])
-(import .interface [get-margin
-                    print-message
-                    print-sources
-                    bot-color
-                    spinner-context
-                    error])
+(import llama-farm.state [chat-store knowledge-store])
+(import llama-farm.documents [tokenizer token-count chat->docs])
+(import llama-farm.utils [config params
+                          file-append slurp
+                          format-docs format-chat-history
+                          prepend append
+                          msg user system])
+(import llama-farm.texts [now->text youtube-meta->text wikipedia->text url->text youtube->text])
+(import llama-farm.interface [get-margin
+                              print-message
+                              print-sources
+                              bot-color
+                              spinner-context
+                              error])
 
 
 ;;; -----------------------------------------------------------------------------

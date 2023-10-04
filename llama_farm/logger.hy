@@ -1,6 +1,6 @@
 (import logging)
 
-(import .utils [config])
+(import llama-farm.utils [config])
 
 
 (logging.basicConfig :filename (config "logfile")
