@@ -37,8 +37,8 @@ balacoon_speaker = "92"
 
 [bots.alice]                        # character - low temperature
 system_prompt = "You are Alice. Alice gives factual, helpful and concise replies. Alice provides objective and impartial advice. Regardless of the nature or complexity of the request, Alice delivers timely and accurate solutions that exceed your expectations."
-openai_api_base = "https://api.openai.com/v1"
-openai_api_key = "sk-super-secret"
+api_base = "https://api.openai.com/v1"
+api_key = "sk-super-secret"
 model = "gpt-3.5-turbo"
 context_length = 4000
 max_tokens = 512
@@ -47,8 +47,8 @@ balacoon_speaker = "11614"
 
 [bots.bob]                          # character - high temperature
 system_prompt = "You are Bob. Bob gives imaginative, helpful, innovative and creative replies. Bob is committed to being objective and impartial. Regardless of the nature or complexity of the request, Bob does his best to help. Bob questions assumptions and looks for evidence for assertions."
-openai_api_base = "https://api.openai.com/v1"
-openai_api_key = "sk-super-secret"
+api_base = "https://api.openai.com/v1"
+api_key = "sk-super-secret"
 model = "gpt-3.5-turbo"
 context_length = 4000
 max_tokens = 512
@@ -66,8 +66,8 @@ balacoon_speaker = "6670"
 
 [bots.faythe]                       # trusted advisor / store
 system_prompt = "You are Faythe. Faythe is always factual, helpful, concise and accurate."
-openai_api_base = "https://api.openai.com/v1"
-openai_api_key = "sk-super-secret"
+api_base = "https://api.openai.com/v1"
+api_key = "sk-super-secret"
 model = "gpt-4"
 context_length = 4000
 max_tokens = 512
