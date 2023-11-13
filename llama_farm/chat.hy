@@ -96,11 +96,11 @@ Functions that return messages or are associated with chat management.
     (when text
       (with [c (spinner-context f"{(.capitalize bot)} is speaking..." :style f"italic {(bot-color bot)}")]
         (cond (= tts-engine "bark") (do
-                                      (import .bark [speak])
+                                      (import llama-farm.bark [speak])
                                       (speak text
                                              :voice (:bark-voice (params bot) "v2/en_speaker_0")))
               (= tts-engine "balacoon") (do
-                                          (import .balacoon [speak])
+                                          (import llama-farm.balacoon [speak])
                                           (speak text
                                                  :model (config "balacoon_model")
                                                  :speaker (:balacoon-speaker (params bot)))))))))
