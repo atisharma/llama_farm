@@ -76,12 +76,11 @@ Parse user input and dispatch the resulting operation internally.
   (tabulate
     :rows (lfor p (bots)
                 (let [name f"{(.capitalize p)}" 
-                      kind (:kind (params p) "mock")
-                      model (:model_name (params p) "")
+                      model (:model (params p) "")
                       temp (:temperature (params p) "")
                       system-prompt (:system-prompt (params p) "")]
-                  [name kind model (str temp) system-prompt]))
-    :headers ["bot" "kind" "model" "temp" "system prompt"]
+                  [name model (str temp) system-prompt]))
+    :headers ["bot" "model" "temp" "system prompt"]
     :styles (list (map bot-color (bots)))))
 
 (defn set-bot [[new-bot ""]]

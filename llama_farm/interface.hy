@@ -118,8 +118,9 @@ Functions that relate to output on the screen.
   (console.rule)
   ; cropping not working :(
   (let [max-length-s (+ console.width 24)
-        truncated-s (if (> (len s) max-length-s)
-                        (+ (cut s 0 max-length-s) "…")
+        one-line-s (.replace s "\n" "; ")
+        truncated-s (if (> (len one-line-s) max-length-s)
+                        (+ (cut one-line-s 0 max-length-s) "…")
                         s)]
     (console.print truncated-s
                    :end "\r"
@@ -135,6 +136,9 @@ Functions that relate to output on the screen.
   (print)
   (print "\033[K" :end "") ; clear to end of line
   (print)
+  (print "\033[K" :end "") ; clear to end of line
+  (print)
+  (print "\033[1A" :end "") ; up one line
   (print "\033[1A" :end "") ; up one line
   (print "\033[1A" :end "")) ; up one line
   

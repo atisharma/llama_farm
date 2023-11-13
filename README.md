@@ -28,13 +28,11 @@ URLs and text files.
 ### Compatibility and technology
 Llama-farm speaks to any OpenAI-compatible API:
 
+- [llama-api](https://github.com/c0sogi/llama-api) (recommended)
 - oobabooga/text-generation-webui (via its OpenAI-compatible API extension)
-- OpenAI
+- OpenAI (recommended)
 - lm-sys/FastChat (untested)
 - keldenl/gpt-llama.cpp (untested)
-
-The oobabooga solution with exllama is recommended because it's fast
-and is what gets tested.
 
 Llama-farm uses hwchase17/langchain for the vectordb abstraction and
 splitting of long documents (see limitations).
