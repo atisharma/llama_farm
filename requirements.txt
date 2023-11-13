@@ -1,13 +1,14 @@
 arxiv
 duckduckgo-search
 faiss-cpu
+faster-whisper
 hy==0.27.0
 hyrule==0.4.0
 langchain
 libmagic
 lorem
 markdownify
-openai==0.28
+openai
 pdf2image
 protobuf==3.20.1
 pymupdf

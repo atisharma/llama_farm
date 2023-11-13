@@ -4,9 +4,7 @@ Chat management functions.
 
 (require hyrule.argmove [-> ->>])
 
-(import openai [ChatCompletion])
-
-(import tenacity [retry stop-after-attempt wait-random-exponential])
+(import openai [OpenAI])
 
 (import llama-farm [texts utils])
 (import llama-farm.documents [token-count])
@@ -38,8 +36,7 @@ Chat management functions.
 
 ;;; -----------------------------------------------------------------------------
 
-(defn [(retry :wait (wait-random-exponential :min 0.5 :max 30)
-              :stop (stop-after-attempt 6))] respond [bot messages #** kwargs]
+(defn respond [bot messages #** kwargs]
   "Reply to a list of messages and return just content.
 The messages should already have the standard roles."
   (if (> (token-count messages) (:context-length (params bot) 2000))
@@ -47,13 +44,16 @@ The messages should already have the standard roles."
       (let [defaults {"api_key" "n/a"
                       "model" "gpt-3.5-turbo"}
             p (api-params bot)
-            response (ChatCompletion.create
+            params (| defaults p kwargs)
+            client (OpenAI :api-key (.pop params "api_key")
+                           :base_url (.pop params "api_base"))
+            response (client.chat.completions.create
                        :messages (clean-messages messages)
-                       #** (| defaults p kwargs))]
+                       #** params)]
         (-> response.choices
             (first)
-            (:message)
-            (:content)))))
+            (. message)
+            (. content)))))
 
 (defn edit [bot text instruction #** kwargs]
   "Follow an instruction.
