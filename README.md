@@ -85,14 +85,13 @@ before you run llama-farm. For example, run the LLM server on one
 graphics card and llama-farm's TTS on a weaker one.
 
 ### Suitable models
-Llama-farm works very well with OpenAI's gpt-3.5-turbo.
-Wizard-Vicuna-Uncensored, WizardLM, etc also work very well. It even
-works surprisingly well with WizardLM-7B!  But see limitations below.
+Llama-farm works very well with OpenAI's gpt-3.5-turbo. Llama 2 model
+derivatives are also excellent. But see limitations below.
 
 ### Limitations and bugs
-- Larger LLaMA models (30B) work much better for complex tasks.
-- The context length limitation of Llama models (2048 tokens) is half
-  or less that of OpenAI's models.
+- Larger LLaMA models (30B+) work much better for complex tasks.
+- The context length limitation of Llama models (2048 tokens for L1,
+  4096 for L2) is less that of OpenAI's models.
 - The OpenAI API (and compatible ones) do not expose a number of
   capabilities that local models have.
 - The `ingest` command (from command line or within the chat) can't be
