@@ -34,8 +34,8 @@ optional k value to specify the number of results.
 
 (import os)
 
-(import langchain.embeddings [HuggingFaceEmbeddings])
-(import langchain.vectorstores [Chroma FAISS])
+(import langchain-community.embeddings [HuggingFaceEmbeddings])
+(import langchain-community.vectorstores [Chroma FAISS])
 (import langchain.docstore.in_memory [InMemoryDocstore])
 
 (import llama-farm.utils [config hash-id])

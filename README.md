@@ -28,7 +28,8 @@ URLs and text files.
 ### Compatibility and technology
 Llama-farm speaks to any OpenAI-compatible API:
 
-- [llama-api](https://github.com/c0sogi/llama-api) (recommended)
+- [tabby-api](https://github.com/theroyallab/tabbyAPI/) (recommended)
+- [llama-api](https://github.com/c0sogi/llama-api)
 - oobabooga/text-generation-webui (via its OpenAI-compatible API extension)
 - OpenAI (recommended)
 - lm-sys/FastChat (untested)

@@ -16,12 +16,12 @@ Functions that produce lists of Document objects.
 
 (import transformers [LlamaTokenizerFast])
 
-(import langchain.document-loaders [TextLoader
-                                    UnstructuredFileLoader
-                                    PyMuPDFLoader])
+(import langchain-community.document-loaders [TextLoader
+                                              UnstructuredFileLoader
+                                              PyMuPDFLoader])
+(import langchain-community.utilities [WikipediaAPIWrapper])
 (import langchain.text-splitter [RecursiveCharacterTextSplitter
                                  MarkdownTextSplitter])
-(import langchain.utilities [WikipediaAPIWrapper])
 (import langchain.schema [Document])
 
 (import llama-farm.utils [config format-chat-history])
