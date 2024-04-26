@@ -25,3 +25,4 @@ tomli
 unstructured
 wikipedia
 youtube-transcript-api
+lxml_html_clean
