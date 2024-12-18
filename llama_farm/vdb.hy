@@ -34,8 +34,8 @@ optional k value to specify the number of results.
 
 (import os)
 
-(import langchain.embeddings [HuggingFaceEmbeddings])
-(import langchain.vectorstores [Chroma FAISS])
+(import langchain-community.embeddings [HuggingFaceEmbeddings])
+(import langchain-community.vectorstores [Chroma FAISS])
 (import langchain.docstore.in_memory [InMemoryDocstore])
 
 (import llama-farm.utils [config hash-id])
@@ -71,7 +71,7 @@ optional k value to specify the number of results.
   ;; https://github.com/facebookresearch/faiss/wiki/Special-operations-on-indexes
   (import faiss [IndexFlatL2])
   (let [db (if (os.path.isdir db-path)
-               (FAISS.load-local db-path embedding)
+               (FAISS.load-local db-path embedding :allow-dangerous-deserialization True)
                (FAISS :embedding-function embedding.embed-query
                       :index (IndexFlatL2 (len (embedding.embed-query "get the embedding dimension")))
                       :docstore (InMemoryDocstore {})

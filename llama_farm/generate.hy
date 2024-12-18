@@ -38,11 +38,11 @@ Chat management functions.
 
 (defn respond [bot messages #** kwargs]
   "Reply to a list of messages and return just content.
-The messages should already have the standard roles."
+  The messages should already have the standard roles."
   (if (> (token-count messages) (:context-length (params bot) 2000))
       (raise (GenerationError f"Messages too long for context: {(token-count messages)}."))
       (let [defaults {"api_key" "n/a"
-                      "model" "gpt-3.5-turbo"}
+                      "model" "gpt-4-turbo"}
             p (api-params bot)
             params (| defaults p kwargs)
             client (OpenAI :api-key (.pop params "api_key")
@@ -52,8 +52,8 @@ The messages should already have the standard roles."
                        #** params)]
         (-> response.choices
             (first)
-            (. message)
-            (. content)))))
+            (getattr "message")
+            (getattr "content")))))
 
 (defn edit [bot text instruction #** kwargs]
   "Follow an instruction.
@@ -66,7 +66,7 @@ The messages should already have the standard roles."
 
 (defn chat [bot messages #** kwargs] ; -> message
   "An assistant response (message) to a list of messages.
-The messages should already have the standard roles."
+  The messages should already have the standard roles."
   (msg "assistant"
        (respond bot messages #** kwargs)
        bot))

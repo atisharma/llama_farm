@@ -2,9 +2,10 @@ arxiv
 duckduckgo-search
 faiss-cpu
 faster-whisper
-hy==0.27.0
-hyrule==0.4.0
+hy==0.28.0
+hyrule==0.5.0
 langchain
+langchain_community
 libmagic
 lorem
 markdownify
@@ -24,3 +25,4 @@ tomli
 unstructured
 wikipedia
 youtube-transcript-api
+lxml_html_clean
